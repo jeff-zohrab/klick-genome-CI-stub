@@ -94,7 +94,7 @@ node('sensei_build') {
 
       stage('NUnit') {
         if (should_execute('NUnit')) {
-          genome.run_nunit(pipeline_config['nunit_filter'])
+          run_nunit(pipeline_config['nunit_filter'])
           db_reset_required = true
         }
       }
@@ -158,6 +158,15 @@ def lock_schema_migrations() {
       // sapping pipeline resources.
       // powershell "Scripts\\Jenkins\\develop_cleanup\\remove_old_jenkins_config_files.ps1 -branch ${env.BRANCH_NAME}"
     }
+  }
+}
+
+run_nunit(nunit_filter) {
+  try {
+    bat "rake run_nunit[\"$nunit_filter\"]"
+  }
+  finally {
+    nunit testResultsPattern: 'nunit-result.xml'
   }
 }
 
