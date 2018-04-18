@@ -161,7 +161,7 @@ def lock_schema_migrations() {
   }
 }
 
-run_nunit(nunit_filter) {
+def run_nunit(nunit_filter) {
   try {
     bat "rake run_nunit[\"$nunit_filter\"]"
   }
