@@ -53,10 +53,10 @@ node('sensei_build') {
         genome.stop_iis()
         cleanWs()
 
-        args = {
+        args = [
 	  'workspace_dir': env.WORKSPACE
 	  'branch_name': env.BRANCH_NAME
-        }
+        ]
         genome.checkout_from_reference_repo(args)
         pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
         slack_channel = pipeline_config['slack_channel']
