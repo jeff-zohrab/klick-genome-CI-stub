@@ -37,9 +37,8 @@ node('sensei_build') {
   // subsequent stages.
   def db_reset_required = false
 
-  // Shared library instance.
+  // Shared library instances.
   def genome = new org.klick.Genome()
-
   def githelper = new org.klick.Git()
 
   // The GitHub plugin creates unusable directory names
@@ -53,11 +52,11 @@ node('sensei_build') {
         genome.stop_iis()
         cleanWs()
 
-        args = [
-	  'workspace_dir': env.WORKSPACE,
-	  'branch_name': env.BRANCH_NAME
+        checkout_args = [
+	  workspace_dir: env.WORKSPACE,
+	  branch_name: env.BRANCH_NAME
         ]
-        githelper.checkout_from_reference_repo(args)
+        githelper.checkout_from_reference_repo(checkout_args)
         pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
         slack_channel = pipeline_config['slack_channel']
       }
