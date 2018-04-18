@@ -8,7 +8,7 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // Shared libraries.
 // Configured in https://ci.senseilabs.com/configure.
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
-@Library('genome') _   // Shared library in Jenkins.
+@Library('WIP') _   // Shared library in Jenkins.
 
 
 node('sensei_build') {
@@ -40,6 +40,8 @@ node('sensei_build') {
   // Shared library instance.
   def genome = new org.klick.Genome()
 
+  def githelper = new org.klick.Git()
+
   // The GitHub plugin creates unusable directory names
   // (ref https://issues.jenkins-ci.org/browse/JENKINS-38706),
   // so hardcode the workspace we'll use, and create dirs as needed.
@@ -50,7 +52,12 @@ node('sensei_build') {
       stage('Checkout') {
         genome.stop_iis()
         cleanWs()
-        genome.checkout_from_reference_repo(env.WORKSPACE, env.BRANCH_NAME)
+
+        args = {
+	  'workspace_dir': env.WORKSPACE
+	  'branch_name': env.BRANCH_NAME
+        }
+        genome.checkout_from_reference_repo(args)
         pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
         slack_channel = pipeline_config['slack_channel']
       }
