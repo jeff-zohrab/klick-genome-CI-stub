@@ -4,7 +4,7 @@
 # HACK ASSUMPTIONS:
 # - the Rakefile is nicely formatted (tasks in namespaces are indented)
 
-src = File.expand_path(File.join(File.dirname(__FILE__), '..', 'klick-genome', 'Rakefile'))
+src = File.expand_path(File.join(File.dirname(__FILE__), '..', '..', 'klick-genome', 'Rakefile'))
 puts "Generating Rakefile from #{src}"
 raise "Missing #{src}" if (!File.exist?(src))
 
@@ -45,15 +45,17 @@ end
 # puts "BODY"
 # puts body
 
-File.open('Rakefile', 'w') do |f|
+write_rakefile = File.expand_path(File.join(File.dirname(__FILE__), '..', 'Rakefile'))
+
+File.open(write_rakefile, 'w') do |f|
   f.puts "### GENERATED FILE ###"
   f.puts "# This file was generated with the script"
   f.puts "# #{__FILE__}"
   f.puts ''
 end
 
-File.open('Rakefile', 'a') do |f|
+File.open(write_rakefile, 'a') do |f|
   f.puts body.join("\n")
 end
 
-puts "Done."
+puts "Done generating rakefile."

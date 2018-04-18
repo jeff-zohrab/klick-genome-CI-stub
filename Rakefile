@@ -1,6 +1,6 @@
 ### GENERATED FILE ###
 # This file was generated with the script
-# create_stub_klick_genome_rakefile.rb
+# scripts/create_stub_klick_genome_rakefile.rb
 
 namespace :rakefile do
   desc "Validate Rakefile dependencies and actions."
