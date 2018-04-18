@@ -57,7 +57,7 @@ node('sensei_build') {
 	  'workspace_dir': env.WORKSPACE,
 	  'branch_name': env.BRANCH_NAME
         ]
-        genome.checkout_from_reference_repo(args)
+        githelper.checkout_from_reference_repo(args)
         pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
         slack_channel = pipeline_config['slack_channel']
       }
