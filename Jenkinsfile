@@ -54,7 +54,7 @@ node('sensei_build') {
         cleanWs()
 
         args = [
-	  'workspace_dir': env.WORKSPACE
+	  'workspace_dir': env.WORKSPACE,
 	  'branch_name': env.BRANCH_NAME
         ]
         genome.checkout_from_reference_repo(args)
