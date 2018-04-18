@@ -50,7 +50,7 @@ write_rakefile = File.expand_path(File.join(File.dirname(__FILE__), '..', 'Rakef
 File.open(write_rakefile, 'w') do |f|
   f.puts "### GENERATED FILE ###"
   f.puts "# This file was generated with the script"
-  f.puts "# #{__FILE__}"
+  f.puts "# scripts/create_stub_klick_genome_rakefile.rb"
   f.puts ''
 end
 
