@@ -24,6 +24,10 @@ desc "Compile cache"
 task :compilecache do puts "  called compilecache" end
 desc "Compile fingerprint"
 task :compilefingerprint do puts "  called compilefingerprint" end
+namespace :schema do
+  desc "Create an empty schema migration folder."
+  task :genmigration do puts "  called genmigration" end
+end
 desc "Schema migration: Reset the db (eg, 'rake resetdb[\"intranet_darcy\"]')"
 task :resetdb, :dbname do |t, args| puts "  called resetdb," end
 desc "Schema migration: Run each script twice to check idempotency."
@@ -139,5 +143,5 @@ task :todo do puts "  called todo" end
 desc "Add RadEditor HTTP handlers to Web.config"
 task :fixconfigforradeditor do puts "  called fixconfigforradeditor" end
 
-# SIMULATING RAKE ERRORS
-require_relative 'simulate_failure/simulate_rake_task_failure_for_current_branch.rb'
+# SIMULATING ERRORS
+require_relative 'simulate_failure/simulate_failure_for_current_branch.rb'
