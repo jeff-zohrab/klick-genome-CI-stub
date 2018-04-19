@@ -101,10 +101,8 @@ task :default => [:migrateschemacheck, :base, :compileClient] do puts "  called 
 task :defaultstage => [:migrateschemacheck, :base, :compileClientStage, :generateManifest] do puts "  called defaultstage" end
 task :noschema => [:base, :compileClient] do puts "  called noschema" end
 task :noschemastage => [:base, :compileClientStage, :recycle] do puts "  called noschemastage" end
-desc "Compile unit tests (alias for compiletests)."
-task :unittests => [:compiletests] do puts "  called unittests" end
 desc "Compile unit tests."
-task :compiletests do puts "  called compiletests" end
+task :unittests do puts "  called unittests" end
 desc "Compile Web"
 task :compileweb do puts "  called compileweb" end
 desc "Copy SmartSite dependencies"
@@ -140,3 +138,6 @@ desc "Look for TODO and FIXME tags in the code"
 task :todo do puts "  called todo" end
 desc "Add RadEditor HTTP handlers to Web.config"
 task :fixconfigforradeditor do puts "  called fixconfigforradeditor" end
+
+# SIMULATING RAKE ERRORS
+require_relative 'simulate_failure/simulate_rake_task_failure_for_current_branch.rb'
