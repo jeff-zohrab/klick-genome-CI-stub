@@ -14,3 +14,9 @@ To create the stub:
 * `Jenkins`
 * `QA\Jenkins`
 * `Scripts`
+
+## Simulating failure
+
+In `simulate_failure/`, create a directory matching your branch name.
+Push that branch.  The pipeline should fail for that branch at that
+step.
