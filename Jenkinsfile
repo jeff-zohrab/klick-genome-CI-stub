@@ -170,7 +170,7 @@ def run_nunit(nunit_filter) {
     bat "rake runtests[\"$nunit_filter\"]"
   }
   finally {
-    nunit testResultsPattern: 'TestResult.xml'
+    nunit testResultsPattern: 'nunit-result.xml'
   }
 }
 
