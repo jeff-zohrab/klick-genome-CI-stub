@@ -18,6 +18,7 @@ def set_selenium_success()
 end
 
 def set_selenium_failure()
+  puts "SETTING FAILURE file at #{$selenium_failure_flag_file}"
   File.open($selenium_failure_flag_file, 'w') do |f|
     f.puts "FAIL"
   end
