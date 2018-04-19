@@ -117,7 +117,7 @@ node('sensei_build') {
 
       if (pipeline_config.containsKey('selenium_filter')) {
         stage('Run Selenium test') {
-          genome.configure_iis_and_start_site()
+          configure_iis_and_start_site()
           bat 'rake compileqaattributedecorator compileqauitesting'
           if (db_reset_required) {
             bat 'rake resetmydb migrateschema'
@@ -171,6 +171,16 @@ def run_nunit(nunit_filter) {
   }
   finally {
     nunit testResultsPattern: 'nunit-result.xml'
+  }
+}
+
+// Jenkins deletes the workspace, which appears to confuse IIS.
+// Setting everything up afresh for the run.
+def configure_iis_and_start_site() {
+  withCredentials([string(credentialsId: 'senseilabs-com-pfx-certificate-password', variable: 'P')]) {
+    withEnv(["ENV_CERT_PASS=${P}"]) {
+      powershell "Scripts\\Jenkins\\IIS\\setup_iis.ps1"
+    }
   }
 }
 
