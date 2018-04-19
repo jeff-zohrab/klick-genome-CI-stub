@@ -55,9 +55,9 @@ node('sensei_build') {
         checkout_args = [
           workspace_dir: env.WORKSPACE,
           branch_name: env.BRANCH_NAME,
-          github_org: 'jeff-zohrab'
-          repo_name: 'klick-genome-CI-stub'
-          ref_repo_parent_dir: 'c:\\reference_repo'
+          github_org: 'jeff-zohrab',
+          repo_name: 'klick-genome-CI-stub',
+          ref_repo_parent_dir: 'c:\\reference_repo',
           creds_id: 'github-ci'
         ]
         githelper.checkout_from_reference_repo(checkout_args)
