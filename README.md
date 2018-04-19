@@ -8,7 +8,6 @@ To create the stub:
 * call `setup.rb`
 * commit any changes and push
 
-
 ## Important subdirs that mirror those in klick-genome
 
 * `Jenkins`
@@ -17,6 +16,6 @@ To create the stub:
 
 ## Simulating failure
 
-In `simulate_failure/`, create a directory matching your branch name.
-Push that branch.  The pipeline should fail for that branch at that
-step.
+In `simulate_failure/`, create `{branch_name}.rb`, where
+`{branch_name}` is the current branch name.  See `demonstration.rb`
+for an example.

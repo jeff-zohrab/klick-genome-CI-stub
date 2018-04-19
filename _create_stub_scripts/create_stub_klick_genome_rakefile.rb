@@ -60,8 +60,8 @@ end
 
 File.open(write_rakefile, 'a') do |f|
   f.puts ''
-  f.puts '# SIMULATING RAKE ERRORS'
-  f.puts "require_relative 'simulate_failure/simulate_rake_task_failure_for_current_branch.rb'"
+  f.puts '# SIMULATING ERRORS'
+  f.puts "require_relative 'simulate_failure/simulate_failure_for_current_branch.rb'"
 end
 
 puts "Done generating rakefile."
