@@ -12,6 +12,7 @@ end
 $selenium_failure_flag_file = File.expand_path(File.join(File.dirname(__FILE__), '..', 'QA', 'Jenkins', 'simulate_selenium_failure.txt'))
 
 def set_selenium_success()
+  puts "CLEARING FAILURE file at #{$selenium_failure_flag_file}"
   if (File.exist?($selenium_failure_flag_file)) then
     File.delete($selenium_failure_flag_file)
   end
