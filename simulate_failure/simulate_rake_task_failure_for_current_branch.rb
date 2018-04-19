@@ -9,16 +9,16 @@ def get_git_branch_name()
   return branch_name.strip
 end
 
-selenium_failure_flag_file = File.expand_path(File.join(File.dirname(__FILE__), '..', 'QA', 'Jenkins', 'simulate_selenium_failure.txt'))
+$selenium_failure_flag_file = File.expand_path(File.join(File.dirname(__FILE__), '..', 'QA', 'Jenkins', 'simulate_selenium_failure.txt'))
 
 def set_selenium_success()
-  if (File.exist?(selenium_failure_flag_file)) then
-    File.rm(selenium_failure_flag_file)
+  if (File.exist?($selenium_failure_flag_file)) then
+    File.rm($selenium_failure_flag_file)
   end
 end
 
 def set_selenium_failure()
-  File.open(selenium_failure_flag_file, 'w') do |f|
+  File.open($selenium_failure_flag_file, 'w') do |f|
     f.puts "FAIL"
   end
 end
