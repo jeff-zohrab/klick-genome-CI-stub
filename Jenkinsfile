@@ -140,13 +140,9 @@ node('sensei_build') {
       currentBuild.result = 'FAILURE'
     }
     finally {
-      echo "finally A"
       genome.notify_slack_channel_if_back_to_normal(currentBuild, slack_channel)
-      echo "finally B"
       genome.stop_iis()
-      echo "finally C"
       cleanWs()
-      echo "finally D"
     }
   } // end ws()
 }  // end node
