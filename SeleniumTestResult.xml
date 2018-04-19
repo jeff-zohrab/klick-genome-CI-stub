@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-run id="2" testcasecount="1568" result="Passed" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0" engine-version="3.6.0.0" clr-version="4.0.30319.42000" start-time="2018-04-18 15:04:19Z" end-time="2018-04-18 15:04:32Z" duration="12.560823">
+  <command-line><![CDATA["Utils\NUnit.org\nunit-console\nunit3-console.exe"  UnitTests\UnitTests.nunit "--where:cat!=Integration && cat == hack:all]]></command-line>
+  <filter>
+    <and>
+      <not>
+        <cat>Integration</cat>
+      </not>
+      <cat>hack:all</cat>
+    </and>
+  </filter>
+  <test-suite type="SetUpFixture" id="1-1000" name="UnitTests.dll" fullname="GlobalInit" classname="GlobalInit" runstate="Runnable" testcasecount="1568" result="Passed" start-time="2018-04-18 15:04:20Z" end-time="2018-04-18 15:04:32Z" duration="11.646484" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <environment framework-version="3.2.1.0" clr-version="4.0.30319.42000" os-version="Microsoft Windows NT 6.1.7601 Service Pack 1" platform="Win32NT" cwd="C:\Users\jzohrab\Documents\projects\klick-genome" machine-name="JZOHRAB" user="jzohrab" user-domain="HQ" culture="en-US" uiculture="en-US" os-architecture="x64" />
+    <settings>
+      <setting name="DisposeRunners" value="True" />
+      <setting name="WorkDirectory" value="C:\Users\jzohrab\Documents\projects\klick-genome" />
+      <setting name="BasePath" value="C:\Users\jzohrab\Documents\projects\klick-genome\UnitTests\..\Web" />
+      <setting name="ConfigurationFile" value="Web.config" />
+      <setting name="PrivateBinPath" value="bin" />
+      <setting name="RuntimeFramework" value="v4.0" />
+      <setting name="ProcessModel" value="Default" />
+      <setting name="DomainUsage" value="Default" />
+      <setting name="ImageRuntimeVersion" value="4.0.30319" />
+      <setting name="ImageRequiresX86" value="False" />
+      <setting name="ImageRequiresDefaultAppDomainAssemblyResolver" value="False" />
+      <setting name="NumberOfTestWorkers" value="4" />
+    </settings>
+    <properties>
+      <property name="_PID" value="9956" />
+      <property name="_APPDOMAIN" value="domain-22ecf645-UnitTests.nunit" />
+    </properties>
+    <test-suite type="TestSuite" id="1-2784" name="UnitTests" fullname="UnitTests" runstate="Runnable" testcasecount="1568" result="Passed" start-time="2018-04-18 15:04:32Z" end-time="2018-04-18 15:04:32Z" duration="0.096144" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties />
+      <test-suite type="TestSuite" id="1-2832" name="Scrap" fullname="UnitTests.Scrap" runstate="Runnable" testcasecount="7" result="Passed" start-time="2018-04-18 15:04:32Z" end-time="2018-04-18 15:04:32Z" duration="0.095097" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestFixture" id="1-2775" name="ZZHACK" fullname="UnitTests.Scrap.ZZHACK" classname="UnitTests.Scrap.ZZHACK" runstate="Runnable" testcasecount="7" result="Passed" start-time="2018-04-18 15:04:32Z" end-time="2018-04-18 15:04:32Z" duration="0.093931" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-case id="1-2777" name="hack_all" fullname="UnitTests.Scrap.ZZHACK.hack_all" methodname="hack_all" classname="UnitTests.Scrap.ZZHACK" runstate="Runnable" seed="85877153" result="Passed" start-time="2018-04-18 15:04:32Z" end-time="2018-04-18 15:04:32Z" duration="0.076646" asserts="0">
+            <properties>
+              <property name="Category" value="hack:all" />
+            </properties>
+            <output><![CDATA[update [User] set Enabled = 1 where username like '%zohrab%'
+update SystemSetting set Value = '"sb-sensei-metrics"' where [Key] = 'sensei-metrics-s3-bucket'
+]]></output>
+          </test-case>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
