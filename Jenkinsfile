@@ -54,7 +54,7 @@ node('sensei_build') {
 
         checkout_args = [
           workspace_dir: env.WORKSPACE,
-          // branch_name: env.BRANCH_NAME,
+          branch_name: env.BRANCH_NAME,
           github_org: 'jeff-zohrab',
           repo_name: 'klick-genome-CI-stub',
           ref_repo_parent_dir: 'c:\\reference_repo',
