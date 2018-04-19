@@ -12,7 +12,7 @@ end
 selenium_failure_flag_file = File.expand_path(File.join(File.dirname(__FILE__), '..', 'QA', 'Jenkins', 'simulate_selenium_failure.txt'))
 
 def set_selenium_success()
-  if (File.exist?(simulate_selenium_failure)) then
+  if (File.exist?(selenium_failure_flag_file)) then
     File.rm(selenium_failure_flag_file)
   end
 end
