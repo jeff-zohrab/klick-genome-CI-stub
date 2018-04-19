@@ -13,7 +13,7 @@ $selenium_failure_flag_file = File.expand_path(File.join(File.dirname(__FILE__),
 
 def set_selenium_success()
   if (File.exist?($selenium_failure_flag_file)) then
-    File.rm($selenium_failure_flag_file)
+    File.delete($selenium_failure_flag_file)
   end
 end
 
