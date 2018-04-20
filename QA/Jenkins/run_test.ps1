@@ -11,8 +11,6 @@ param(
 
 echo ">>> FAKE RUN OF SELENIUM"
 echo "run_test.ps1 called with args:"
-echo " * site_ip: ${site_ip}"
-echo " * selenium_hub_url: ${selenium_hub_url}"
 echo " * nunit_filter: ${nunit_filter}"
 echo " * report_to_testrail: ${report_to_testrail}"
 echo " * branch_name: ${branch_name}"
