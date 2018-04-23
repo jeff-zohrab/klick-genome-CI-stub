@@ -10,12 +10,11 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
 @Library('WIP') _   // Shared library in Jenkins.
 
+// Users can tailor parts of pipeline using config files
+// See Jenkins/README.md.
+def pipeline_config
 
 node('sensei_build') {
-
-  // Users can tailor parts of pipeline using config files
-  // See Jenkins/README.md.
-  def pipeline_config
 
   // Slack channel to report to (specified in Jenkins config file)
   def slack_channel = ''
