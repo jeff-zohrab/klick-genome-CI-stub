@@ -1,3 +1,3 @@
-skip: Setup db
+skip: TESTING
 nunit_filter: cat == somevalue
 selenium_filter: cat == somevalue

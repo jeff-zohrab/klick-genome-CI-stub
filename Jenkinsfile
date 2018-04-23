@@ -80,6 +80,12 @@ node('sensei_build') {
         }
       }
 
+      stage('TESTING') {
+        if (should_execute('TESTING')) {
+	  echo 'testing'
+        }
+      }
+
       stage('Setup db') {
         if (should_execute('Setup db')) {
           timeout(10) { // minutes
