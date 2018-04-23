@@ -16,35 +16,13 @@ import groovy.transform.Field
 // Using a global variable (!) to allow for the optional_stage helper method.
 // ref https://stackoverflow.com/questions/6305910/
 //    how-do-i-create-and-access-the-global-variables-in-groovy
-@Field Map pipeline_config = null
-
-// Users can skip steps.
-// Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
-def optional_stage(stage_name, stage_closure) {
-  if (pipeline_config['skip'].contains(stage_name.toLowerCase())) {
-    echo "Skipping ${stage_name}"
-    return
-  }
-
-  stage(stage_name) {
-    stage_closure()
-  }
-}
+@Field Map PIPELINE_CONFIG = null
 
 
 node('sensei_build') {
 
   // Slack channel to report to (specified in Jenkins config file)
   def slack_channel = ''
-
-  // Users can 'skip' some stages using the Jenkins config file.
-  def should_execute = {
-    if (pipeline_config['skip'].contains(it.toLowerCase())) {
-      echo "Skipping ${it}"
-      return false
-    }
-    return true
-  }
 
   // Each Jenkins node/executor gets its own DB.
   // db_name must start with "intranet_jnk_" (see UnitTests/DatabaseTestBase.cs)
@@ -77,8 +55,8 @@ node('sensei_build') {
           creds_id: 'github-ci'
         ]
         githelper.checkout_from_reference_repo(checkout_args)
-        pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
-        slack_channel = pipeline_config['slack_channel']
+        PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
+        slack_channel = PIPELINE_CONFIG['slack_channel']
       }
 
       stage('Config') {
@@ -97,40 +75,30 @@ node('sensei_build') {
         }
       }
 
-      stage('Setup db') {
-        if (should_execute('Setup db')) {
-          timeout(10) { // minutes
-            bat "rake resetdb[\"$db_name\"] migrateschema"
-          }
+      optional_stage('Setup db') {
+        timeout(10) { // minutes
+          bat "rake resetdb[\"$db_name\"] migrateschema"
         }
       }
 
-      stage('Compile back end') {
-        if (should_execute('Compile back end')) {
-          bat 'rake migrateschemacheck base'
-        }
+      optional_stage('Compile back end') {
+        bat 'rake migrateschemacheck base'
       }
 
-      stage('NUnit') {
-        if (should_execute('NUnit')) {
-          run_nunit(pipeline_config['nunit_filter'])
-          db_reset_required = true
-        }
+      optional_stage('NUnit') {
+        run_nunit(PIPELINE_CONFIG['nunit_filter'])
+        db_reset_required = true
       }
 
-      stage('Compile client') {
-        if (should_execute('Compile client')) {
-          bat 'rake compileClient'
-        }
+      optional_stage('Compile client') {
+        bat 'rake compileClient'
       }
 
-      stage('Npm test') {
-        if (should_execute('Npm test')) {
-          bat 'npm test -- --single-run'
-        }
+      optional_stage('Npm test') {
+        bat 'npm test -- --single-run'
       }
 
-      if (pipeline_config.containsKey('selenium_filter')) {
+      if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
         stage('Run Selenium test') {
           configure_iis_and_start_site()
           bat 'rake compileqaattributedecorator compileqauitesting'
@@ -138,7 +106,7 @@ node('sensei_build') {
             bat 'rake resetmydb migrateschema'
           }
           timeout(120) {  // minutes
-            run_selenium(pipeline_config)
+            run_selenium(PIPELINE_CONFIG)
           }
         }
       }
@@ -165,6 +133,21 @@ node('sensei_build') {
 
 ///////////////////////////////////////////////////
 // Helpers
+
+
+// Users can skip steps.
+// Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
+def optional_stage(stage_name, stage_closure) {
+  if (PIPELINE_CONFIG['skip'].contains(stage_name.toLowerCase())) {
+    echo "Skipping ${stage_name}"
+    return
+  }
+
+  stage(stage_name) {
+    stage_closure()
+  }
+}
+
 
 
 def lock_schema_migrations() {
