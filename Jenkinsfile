@@ -29,10 +29,6 @@ node('sensei_build') {
   // db_name must start with "intranet_jnk_" (see UnitTests/DatabaseTestBase.cs)
   def db_name = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
 
-  // Some stages destroy db data, so note if a reset is required for
-  // subsequent stages.
-  def db_reset_required = false
-
   // Shared library instances.
   def genome = new org.klick.Genome()
   def githelper = new org.klick.Git()
@@ -77,9 +73,7 @@ node('sensei_build') {
       }
 
       optional_stage('Setup db') {
-        timeout(10) { // minutes
-          bat "rake resetdb[\"$db_name\"] migrateschema"
-        }
+        setup_db(db_name)
       }
 
       optional_stage('Compile back end') {
@@ -88,7 +82,6 @@ node('sensei_build') {
 
       optional_stage('NUnit') {
         run_nunit(PIPELINE_CONFIG['nunit_filter'])
-        db_reset_required = true
       }
 
       optional_stage('Compile client') {
@@ -103,9 +96,7 @@ node('sensei_build') {
         stage('Run Selenium test') {
           configure_iis_and_start_site()
           bat 'rake compileqaattributedecorator compileqauitesting'
-          if (db_reset_required) {
-            bat 'rake resetmydb migrateschema'
-          }
+          setup_db(db_name)  // Required, as earlier stages may destroy data.
           selenium_args = [
             branch_name: env.BRANCH_NAME,
             selenium_filter: PIPELINE_CONFIG['selenium_filter'],
@@ -152,7 +143,11 @@ def optional_stage(stage_name, stage_closure) {
   }
 }
 
-
+def setup_db(db_name)
+  timeout(10) { // minutes
+    bat "rake resetdb[\"$db_name\"] migrateschema"
+  }
+}
 
 def lock_schema_migrations() {
   withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
