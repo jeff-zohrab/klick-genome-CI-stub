@@ -4,6 +4,7 @@
 // Sensei build Jenkins pipeline.
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import groovy.transform.Field
 
 // Shared libraries.
 // Configured in https://ci.senseilabs.com/configure.
@@ -12,7 +13,8 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 // Users can tailor parts of pipeline using config files
 // See Jenkins/README.md.
-def pipeline_config
+
+@Field Map pipeline_config = null
 
 // Users can skip steps.
 // Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
