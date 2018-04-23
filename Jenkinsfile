@@ -19,8 +19,8 @@ import groovy.transform.Field
 // Users can skip steps.
 // Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
 def optional_stage(step_name, cl) {
-  if (pipeline_config['skip'].contains(it.toLowerCase())) {
-    echo "Skipping ${it}"
+  if (pipeline_config['skip'].contains(step_name.toLowerCase())) {
+    echo "Skipping ${step_name}"
     return
   }
 
