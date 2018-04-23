@@ -13,19 +13,21 @@ import groovy.transform.Field
 
 // Users can tailor parts of pipeline using config files
 // See Jenkins/README.md.
-
+// Using a global variable (!) to allow for the optional_stage helper method.
+// ref https://stackoverflow.com/questions/6305910/
+//    how-do-i-create-and-access-the-global-variables-in-groovy
 @Field Map pipeline_config = null
 
 // Users can skip steps.
 // Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
-def optional_stage(step_name, cl) {
-  if (pipeline_config['skip'].contains(step_name.toLowerCase())) {
-    echo "Skipping ${step_name}"
+def optional_stage(stage_name, stage_closure) {
+  if (pipeline_config['skip'].contains(stage_name.toLowerCase())) {
+    echo "Skipping ${stage_name}"
     return
   }
 
-  stage(step_name) {
-    cl()
+  stage(stage_name) {
+    stage_closure()
   }
 }
 
@@ -93,10 +95,6 @@ node('sensei_build') {
         stage('Lock schema migrations') {
 	  lock_schema_migrations()
         }
-      }
-
-      optional_stage('TESTING') {
-        echo 'testing'
       }
 
       stage('Setup db') {
