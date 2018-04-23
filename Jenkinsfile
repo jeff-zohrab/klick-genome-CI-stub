@@ -18,6 +18,10 @@ import groovy.transform.Field
 
 node('sensei_build') {
 
+  // Code repo.
+  def code_github_org = 'jeff-zohrab',
+  def code_repo_name = 'klick-genome-CI-stub',
+
   // Slack channel to report to (specified in Jenkins config file)
   def slack_channel = ''
 
@@ -41,13 +45,13 @@ node('sensei_build') {
 
     try {
       stage('Checkout') {
-        genome.stop_iis()
+        stop_iis()
         cleanWs()
         checkout_args = [
           workspace_dir: env.WORKSPACE,
           branch_name: env.BRANCH_NAME,
-          github_org: 'jeff-zohrab',
-          repo_name: 'klick-genome-CI-stub',
+          github_org: code_github_org,
+          repo_name: code_repo_name,
           ref_repo_parent_dir: 'c:\\reference_repo',
           creds_id: 'github-ci'
         ]
@@ -121,7 +125,7 @@ node('sensei_build') {
     }
     finally {
       genome.notify_slack_channel_if_back_to_normal(currentBuild, slack_channel)
-      genome.stop_iis()
+      stop_iis()
       cleanWs()
     }
   } // end ws()
@@ -167,6 +171,10 @@ def run_nunit(nunit_filter) {
   finally {
     nunit testResultsPattern: 'nunit-result.xml'
   }
+}
+
+def stop_iis() {
+  powershell "Scripts\\Jenkins\\IIS\\stop_iis.ps1"
 }
 
 // Jenkins deletes the workspace, which appears to confuse IIS.
