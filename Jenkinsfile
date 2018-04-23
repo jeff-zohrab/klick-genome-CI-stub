@@ -143,7 +143,7 @@ def optional_stage(stage_name, stage_closure) {
   }
 }
 
-def setup_db(db_name)
+def setup_db(db_name) {
   timeout(10) { // minutes
     bat "rake resetdb[\"$db_name\"] migrateschema"
   }
