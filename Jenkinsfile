@@ -51,7 +51,6 @@ node('sensei_build') {
       stage('Checkout') {
         genome.stop_iis()
         cleanWs()
-
         checkout_args = [
           workspace_dir: env.WORKSPACE,
           branch_name: env.BRANCH_NAME,

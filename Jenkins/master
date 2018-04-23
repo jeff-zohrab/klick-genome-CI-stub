@@ -1,2 +1,3 @@
+skip: Config
 nunit_filter: cat == somevalue
 selenium_filter: cat == somevalue
