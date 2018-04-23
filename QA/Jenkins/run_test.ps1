@@ -9,11 +9,13 @@ param(
   $branch_name
 )
 
-echo ">>> FAKE RUN OF SELENIUM"
+$selargs = "branch_name: ${branch_name}; nunit_filter: ${nunit_filter}; report_to_testrail: ${report_to_testrail}"
+
+echo ">>>>>> FAKE RUN OF SELENIUM"
 echo "run_test.ps1 called with args:"
-echo " * nunit_filter: ${nunit_filter}"
-echo " * report_to_testrail: ${report_to_testrail}"
-echo " * branch_name: ${branch_name}"
+echo " ${selargs}"
+
+Add-Content -Path "c:\report_runs.txt" -Value "`r`n${selargs}"
 
 $path = "$PSScriptRoot\simulate_selenium_failure.txt"
 if (Test-Path $path) {
