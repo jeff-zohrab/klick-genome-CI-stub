@@ -19,8 +19,8 @@ import groovy.transform.Field
 node('sensei_build') {
 
   // Code repo.
-  def code_github_org = 'jeff-zohrab',
-  def code_repo_name = 'klick-genome-CI-stub',
+  def code_github_org = 'jeff-zohrab'
+  def code_repo_name = 'klick-genome-CI-stub'
 
   // Slack channel to report to (specified in Jenkins config file)
   def slack_channel = ''
