@@ -110,8 +110,7 @@ node('sensei_build') {
 
       stage('Npm test') {
         if (should_execute('Npm test')) {
-	  // TODO - reactivate
-          // bat 'npm test -- --single-run'
+          bat 'npm test -- --single-run'
         }
       }
 
