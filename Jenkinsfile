@@ -106,9 +106,12 @@ node('sensei_build') {
           if (db_reset_required) {
             bat 'rake resetmydb migrateschema'
           }
-          timeout(120) {  // minutes
-            run_selenium(PIPELINE_CONFIG)
-          }
+          selenium_args = [
+            branch_name: env.BRANCH_NAME,
+            selenium_filter: PIPELINE_CONFIG['selenium_filter'],
+            report_to_testrail: true
+          ]
+          run_selenium(selenium_args)
         }
       }
 
@@ -183,18 +186,63 @@ def configure_iis_and_start_site() {
   }
 }
 
-def run_selenium(pipeline_config) {
-  def fail_if_selenium_fails = pipeline_config['fail_if_selenium_fails']
-  def selenium_filter = pipeline_config['selenium_filter']
-  def report_to_testrail = pipeline_config['report_to_testrail']
-  def branch_name = env.BRANCH_NAME
 
-  def genome = new org.klick.Genome()
+// Run selenium, and fail the branch if tests fail.
+// selenium_args: a map with the following values:
+//   * selenium_filter: string (from PIPELINE_CONFIG)
+//   * report_to_testrail: true/false
+//   * branch_name: branch
+def run_selenium(selenium_args) {
+  try {
+    run_selenium_script(selenium_args)
+  }
+  finally {
+    // The Jenkins nunit plugin marks the build
+    // as "failed" if any tests fail.
+    nunit testResultsPattern: 'SeleniumTestResult.xml'
+    publish_selenium_artifacts()
+  }
+}
 
-  if (fail_if_selenium_fails == 'true') {
-    genome.run_selenium_with_fail(selenium_filter, report_to_testrail, branch_name)
+
+// Run selenium tests, but don't fail the branch even if tests fail.
+// This method is separate from the run_selenium() method as it has
+// completely different behaviour.
+// selenium_args: a map with the following values:
+//   * selenium_filter: string (from PIPELINE_CONFIG)
+//   * report_to_testrail: true/false
+//   * branch_name: branch
+def run_selenium_no_fail(selenium_args) {
+  try {
+    run_selenium_script(selenium_args)
   }
-  else {
-    genome.run_selenium_no_fail(selenium_filter, report_to_testrail, branch_name)
+  catch(err) {
+    // We're not failing the build if Selenium fails.
+    // In some cases (e.g.release branches), we don't want to fail the build
+    // if tests fail, as some tests are flaky.
+    // Since the nunit plugin fails the whole build if
+    // it sees test errors, don't use it.
+    echo "Some tests failed, but we're ignoring them."
   }
+  finally {
+    publish_selenium_artifacts()
+  }
+}
+
+def run_selenium_script(selenium_args) {
+  def selenium_filter = selenium_args.selenium_filter
+  def report_to_testrail = selenium_args.report_to_testrail
+  def branch_name = selenium_args.branch_name
+
+  timeout(120) {  // minutes
+    powershell """QA\\Jenkins\\run_test.ps1 `
+      -nunit_filter \"$selenium_filter\" `
+      -report_to_testrail ${report_to_testrail} `
+      -branch_name ${branch_name}"""
+  }
+}
+
+def publish_selenium_artifacts() {
+  def artifact_pattern = 'QA\\UITesting\\SenseiOS.UI.Tests\\bin\\Debug\\Artifacts\\*.*'
+  archiveArtifacts allowEmptyArchive: true, artifacts: artifact_pattern
 }
