@@ -11,9 +11,9 @@ raise "Missing #{src}" if (!File.exist?(src))
 write_Jenkinsfile = File.expand_path(File.join(File.dirname(__FILE__), '..', 'Jenkinsfile'))
 
 File.open(write_Jenkinsfile, 'w') do |f|
-  f.puts "// HACK COPIED JENKINSFILE //"
-  f.puts "// HACK COPIED JENKINSFILE //"
-  f.puts "// HACK COPIED JENKINSFILE //"
+  # f.puts "// HACK COPIED JENKINSFILE //"
+  # f.puts "// HACK COPIED JENKINSFILE //"
+  # f.puts "// HACK COPIED JENKINSFILE //"
 
   f.puts File.read(src)
 end

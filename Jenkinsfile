@@ -1,6 +1,3 @@
-// HACK COPIED JENKINSFILE //
-// HACK COPIED JENKINSFILE //
-// HACK COPIED JENKINSFILE //
 // Sensei build Jenkins pipeline.
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
@@ -9,7 +6,7 @@ import groovy.transform.Field
 // Shared libraries.
 // Configured in https://ci.senseilabs.com/configure.
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
-@Library('WIP') _   // Shared library in Jenkins.
+@Library('genome') _   // Shared library in Jenkins.
 
 // Users can tailor parts of pipeline using config files
 // See Jenkins/README.md.
