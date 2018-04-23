@@ -45,7 +45,7 @@ node('sensei_build') {
 
     try {
       stage('Checkout') {
-        stop_iis()
+        genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
         cleanWs()
         checkout_args = [
           workspace_dir: env.WORKSPACE,
@@ -125,7 +125,7 @@ node('sensei_build') {
     }
     finally {
       genome.notify_slack_channel_if_back_to_normal(currentBuild, slack_channel)
-      stop_iis()
+      genome.stop_iis()
       cleanWs()
     }
   } // end ws()
@@ -171,10 +171,6 @@ def run_nunit(nunit_filter) {
   finally {
     nunit testResultsPattern: 'nunit-result.xml'
   }
-}
-
-def stop_iis() {
-  powershell "Scripts\\Jenkins\\IIS\\stop_iis.ps1"
 }
 
 // Jenkins deletes the workspace, which appears to confuse IIS.
