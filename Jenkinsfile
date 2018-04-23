@@ -14,6 +14,20 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // See Jenkins/README.md.
 def pipeline_config
 
+// Users can skip steps.
+// Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
+def optional_stage(step_name, cl) {
+  if (pipeline_config['skip'].contains(it.toLowerCase())) {
+    echo "Skipping ${it}"
+    return
+  }
+
+  stage(step_name) {
+    cl()
+  }
+}
+
+
 node('sensei_build') {
 
   // Slack channel to report to (specified in Jenkins config file)
@@ -79,10 +93,8 @@ node('sensei_build') {
         }
       }
 
-      stage('TESTING') {
-        if (should_execute('TESTING')) {
-	  echo 'testing'
-        }
+      optional_stage('TESTING') {
+        echo 'testing'
       }
 
       stage('Setup db') {
