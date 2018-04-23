@@ -78,7 +78,7 @@ node('sensei_build') {
       }
 
       stage('Config') {
-        genome.create_web_config(db_name)
+        // genome.create_web_config(db_name)  // TODO reactivate
         writeFile file: 'site.cfg', text: "jenkins_${env.NODE_NAME}"
         writeFile file: 'theme.cfg', text: 'genome'
         bat 'rake jenkins:fix_configs generateManifest'
