@@ -15,7 +15,7 @@ echo ">>>>>> FAKE RUN OF SELENIUM"
 echo "run_test.ps1 called with args:"
 echo " ${selargs}"
 
-Add-Content -Path "c:\report_runs.txt" -Value "`r`n${selargs}"
+Add-Content -Path "c:\www\report_runs.txt" -Value "`r`n${selargs}"
 
 $path = "$PSScriptRoot\simulate_selenium_failure.txt"
 if (Test-Path $path) {
