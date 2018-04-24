@@ -21,8 +21,8 @@ githelper = new org.klick.Git()
 
 node('sensei_build') {
 
-  def code_github_org = 'jeff-zohrab'
-  def code_repo_name = 'klick-genome-CI-stub'
+  def code_github_org = 'jeff-zohrab'  // TODO - fix this
+  def code_repo_name = 'klick-genome-CI-stub'  // TODO - fix this
 
   // Slack channel to report to.
   def slack_channel = ''
