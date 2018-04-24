@@ -22,36 +22,30 @@ githelper = new org.klick.Git()
 
 node('sensei_build') {
 
-  // Code repo.
   def code_github_org = 'jeff-zohrab'
   def code_repo_name = 'klick-genome-CI-stub'
 
-  // Slack channel to report to (specified in Jenkins config file)
+  // Slack channel to report to.
   def slack_channel = ''
 
-  // Each Jenkins node/executor gets its own DB.
-  // db_name must start with "intranet_jnk_" (see UnitTests/DatabaseTestBase.cs)
+  // Unique db per Jenkins node/executor.
   def db_name = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
 
-  // The GitHub plugin creates unusable directory names
-  // (ref https://issues.jenkins-ci.org/browse/JENKINS-38706),
-  // so hardcode the workspace we'll use, and create dirs as needed.
+  // Create directory (the GitHub plugin directory names are unwieldy,
+  // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
   genome.create_dir("c:\\www")
   ws("c:\\www\\genome") {
 
     try {
       checkout(code_github_org, code_repo_name)
+      PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
       slack_channel = PIPELINE_CONFIG['slack_channel']
       configure(db_name)
-
       if (env.BRANCH_NAME == 'develop') {
-        stage('Lock schema migrations') {
-          lock_schema_migrations()
-        }
+        lock_schema_migrations()
       }
-
       setup_db(db_name)
-      build_and_unit_test()
+      build_and_unit_test(PIPELINE_CONFIG['nunit_filter'])
       if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
         ui_testing([
           db_name: db_name,
@@ -98,7 +92,6 @@ def checkout(code_github_org, code_repo_name) {
       creds_id: 'github-ci'
     ]
     githelper.checkout_from_reference_repo(checkout_args)
-    PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
   }
 }
 
@@ -140,21 +133,22 @@ def reset_and_migrate_db(db_name) {
 }
 
 def lock_schema_migrations() {
-  withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
-    withEnv(["ENV_USER=${U}", "ENV_PASS=${P}"]) {
-      powershell "Scripts\\Jenkins\\develop_cleanup\\lock_schema_migrations.ps1 -branch ${env.BRANCH_NAME}"
-
-      // Suppressing config file cleanup for now.
-      // Config file cleanup happens frequently, but that creates a new commit, which kicks off another Jenkins run,
-      // sapping pipeline resources.
-      // powershell "Scripts\\Jenkins\\develop_cleanup\\remove_old_jenkins_config_files.ps1 -branch ${env.BRANCH_NAME}"
+  stage('Lock schema migrations') {
+    withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
+      withEnv(["ENV_USER=${U}", "ENV_PASS=${P}"]) {
+        powershell "Scripts\\Jenkins\\develop_cleanup\\lock_schema_migrations.ps1 -branch ${env.BRANCH_NAME}"
+        // Suppressing config file cleanup for now.
+        // Config file cleanup happens frequently, but that creates a new commit, which kicks off another Jenkins run,
+        // sapping pipeline resources.
+        // powershell "Scripts\\Jenkins\\develop_cleanup\\remove_old_jenkins_config_files.ps1 -branch ${env.BRANCH_NAME}"
+      }
     }
   }
 }
 
-def build_and_unit_test() {
+def build_and_unit_test(nunit_filter = '') {
   build_back_end()
-  test_back_end()
+  test_back_end(nunit_filter)
   build_front_end()
   test_front_end()
 }
@@ -165,9 +159,14 @@ def build_back_end() {
   }
 }
 
-def test_back_end() {
+def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
-    run_nunit(PIPELINE_CONFIG['nunit_filter'])
+    try {
+      bat "rake runtests[\"$nunit_filter\"]"
+    }
+    finally {
+      nunit testResultsPattern: 'nunit-result.xml'
+    }
   }
 }
 
@@ -180,15 +179,6 @@ def build_front_end() {
 def test_front_end() {
   optional_stage('Npm test') {
     bat 'npm test -- --single-run'
-  }
-}
-
-def run_nunit(nunit_filter) {
-  try {
-    bat "rake runtests[\"$nunit_filter\"]"
-  }
-  finally {
-    nunit testResultsPattern: 'nunit-result.xml'
   }
 }
 
@@ -227,7 +217,7 @@ def configure_iis_and_start_site() {
 
 // Run selenium, and fail the branch if tests fail.
 // selenium_args: a map with the following values:
-//   * selenium_filter: string (from PIPELINE_CONFIG)
+//   * selenium_filter: string
 //   * report_to_testrail: true/false
 //   * branch_name: branch
 def run_selenium(selenium_args) {
@@ -247,7 +237,7 @@ def run_selenium(selenium_args) {
 // This method is separate from the run_selenium() method as it has
 // completely different behaviour.
 // selenium_args: a map with the following values:
-//   * selenium_filter: string (from PIPELINE_CONFIG)
+//   * selenium_filter: string
 //   * report_to_testrail: true/false
 //   * branch_name: branch
 def run_selenium_no_fail(selenium_args) {
