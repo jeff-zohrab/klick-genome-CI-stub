@@ -47,7 +47,7 @@ node('sensei_build') {
 
       if (isDevelop()) {
         build_and_unit_test()
-        genome.tag_UT([creds_id: 'github-ci'])
+        genome.tag_UT([branch_name: 'develop', creds_id: 'github-ci'])
       }
       else if (isMaster()) {
         build_and_unit_test()
