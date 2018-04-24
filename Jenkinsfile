@@ -165,18 +165,14 @@ def override_config_for_branch(config, branch_name) {
   filename = 'Jenkins/' + branch_name.replaceAll('/', '_')
   if (!fileExists(filename))
     return config
+
   rawfile = readFile file: filename, encoding: 'ascii'
   lines = rawfile.
     split("\n").
     collect { s -> s.trim() }.
-    findAll { s -> !s.startsWith('#') }.   // Comment
-    findAll { s -> s.contains(':') }.      // Must be key:value
-    findAll { s -> !s.startsWith(':') } //.   // Bad line format
-
-  //  collect { s -> s + ' ' }   // Hack, see below.
-  // Hack adds a space in case the line = '<key>:',
-  // which causes an ArrayIndexOutOfBoundsException
-  // when split.
+    findAll { s -> !s.startsWith('#') }. // Comment
+    findAll { s -> s.contains(':') }.    // Must be key:value
+    findAll { s -> !s.startsWith(':') }  // Bad line format
 
   // rawfile.eachLine doesn't work!
   for (line in lines) {
