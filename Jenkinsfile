@@ -171,21 +171,21 @@ def override_config_for_branch(config, branch_name) {
   rawfile = readFile file: filename, encoding: 'ascii'
   lines = rawfile.
     split("\n").
-    collect { it.trim() }
+    collect { s -> s.trim() }.
+    findAll { s -> !s.startsWith('#') }.
+    findAll { s -> s != '' }.
+    collect { s -> s + ' ' }   // parser hack, see below.
   echo "Got lines: ${lines}"
   echo "xxxxxxxxxxxxxxxxxxxxxxx"
 
+  // Parser hack adds a space in case the line = '<key>:',
+  // which causes an ArrayIndexOutOfBoundsException
+  // when split.
+
   // rawfile.eachLine doesn't work!
-  for (line in rawfile.split("\n")) {
-    s = line.trim()
-    if (!s.startsWith('#') && s != '') {
-      echo "Processing line: ${s}"
-      tmp = s + ' '  // Hack in case the line = '<key>:',
-                     // which causes an ArrayIndexOutOfBoundsException
-                     // when split.
-      (var, value) = tmp.split(':')
-      config << [(var.trim()): (value.trim())]
-    }
+  for (line in lines) {
+    (var, value) = line.split(':')
+    config << [(var.trim()): (value.trim())]
   }
 
   return config
