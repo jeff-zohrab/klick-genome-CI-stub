@@ -14,6 +14,9 @@ import groovy.transform.Field
 //    how-do-i-create-and-access-the-global-variables-in-groovy
 @Field String[] SKIP_STAGES = []
 
+// Unique db per Jenkins node/executor.
+@Field String DB_NAME = ""
+
 // Shared library instances.
 genome = new org.klick.Genome()
 githelper = new org.klick.Git()
@@ -27,8 +30,7 @@ node('sensei_build') {
   // Slack channel to report to.
   def slack_channel = ''
 
-  // Unique db per Jenkins node/executor.
-  def db_name = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
+  DB_NAME = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
 
   // Create directory (the GitHub plugin directory names are unwieldy,
   // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
@@ -37,14 +39,14 @@ node('sensei_build') {
 
     try {
       checkout(code_github_org, code_repo_name)
-      configure(db_name)
+      configure()
 
       def pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
       SKIP_STAGES = pipeline_config['skip']
       slack_channel = get_slack_channel(pipeline_config)
 
       lock_schema_migrations_if_on_develop_branch()
-      setup_db(db_name)
+      setup_db()
 
       if (isDevelop()) {
         build_and_unit_test()
@@ -55,7 +57,6 @@ node('sensei_build') {
       else if (isRelease()) {
         build_and_unit_test(pipeline_config.get('nunit_filter', ''))
         ui_testing([
-          db_name: db_name,
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
           fail_on_error: false
@@ -65,7 +66,6 @@ node('sensei_build') {
         build_and_unit_test(pipeline_config.get('nunit_filter', ''))
         if (pipeline_config.containsKey('selenium_filter')) {
           ui_testing([
-            db_name: db_name,
             selenium_filter: pipeline_config['selenium_filter'],
             report_to_testrail: false,
             fail_on_error: true
@@ -129,9 +129,9 @@ def checkout(code_github_org, code_repo_name) {
   }
 }
 
-def configure(db_name) {
+def configure() {
   stage('Config') {
-    genome.create_web_config(db_name)
+    genome.create_web_config(DB_NAME)
     writeFile file: 'site.cfg', text: "jenkins_${env.NODE_NAME}"
     writeFile file: 'theme.cfg', text: 'genome'
     bat 'rake jenkins:fix_configs generateManifest'
@@ -164,15 +164,15 @@ def optional_stage(stage_name, stage_closure) {
   }
 }
 
-def setup_db(db_name) {
+def setup_db() {
   optional_stage('Setup db') {
-    reset_and_migrate_db(db_name)
+    reset_and_migrate_db(DB_NAME)
   }
 }
 
-def reset_and_migrate_db(db_name) {
+def reset_and_migrate_db() {
   timeout(10) { // minutes
-    bat "rake resetdb[\"$db_name\"] migrateschema"
+    bat "rake resetdb[\"$DB_NAME\"] migrateschema"
   }
 }
 
@@ -238,7 +238,7 @@ def ui_testing(args_map) {
   stage('Run Selenium test') {
     configure_iis_and_start_site()
     bat 'rake compileqaattributedecorator compileqauitesting'
-    reset_and_migrate_db(args_map.db_name)  // Required, as earlier stages may destroy data.
+    reset_and_migrate_db(DB_NAME)  // Required, as earlier stages may destroy data.
     selenium_args = [
       branch_name: env.BRANCH_NAME,
       selenium_filter: args_map.selenium_filter,
