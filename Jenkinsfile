@@ -169,20 +169,23 @@ def override_config_for_branch(config, branch_name) {
   lines = rawfile.
     split("\n").
     collect { s -> s.trim() }.
-    findAll { s -> !s.startsWith('#') }.
-    findAll { s -> s != '' }.
-    findAll { s -> s.contains(':') }.
-    collect { s -> s + ' ' }   // Hack, see below.
+    findAll { s -> !s.startsWith('#') }.   // Comment
+    findAll { s -> s.contains(':') }.      // Must be key:value
+    findAll { s -> !s.startsWith(':') } //.   // Bad line format
+
+  //  collect { s -> s + ' ' }   // Hack, see below.
   // Hack adds a space in case the line = '<key>:',
   // which causes an ArrayIndexOutOfBoundsException
   // when split.
 
   // rawfile.eachLine doesn't work!
   for (line in lines) {
+    // Not using a simple "(key, value) = line.split(':')",
+    // in case the value also has a colon
+    // (e.g, "nunit_filter: cat == Some:Category")
     def colon_pos = line.indexOf(':')
     def key = line.substring(0, colon_pos)
     def value = line.substring(colon_pos + 1, line.length())
-    // (key, value) = line.split(':')
     config << [(key.trim()): (value.trim())]
   }
 
