@@ -170,7 +170,7 @@ def override_config_for_branch(config, branch_name) {
 
   rawfile = readFile file: filename, encoding: 'ascii'
   lines = rawfile.split("\n").collect { it.trim() }
-  echo lines
+  echo "Got lines: ${lines}"
   echo "xxxxxxxxxxxxxxxxxxxxxxx"
 
   // rawfile.eachLine doesn't work!
