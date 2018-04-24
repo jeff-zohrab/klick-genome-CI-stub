@@ -52,20 +52,8 @@ node('sensei_build') {
 
       setup_db(db_name)
       full_build_and_unit_test()
-
       if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
         ui_testing([db_name: db_name, fail_on_error: true, report_to_testrail: true])
-        stage('Run Selenium test') {
-          configure_iis_and_start_site()
-          bat 'rake compileqaattributedecorator compileqauitesting'
-          reset_and_migrate_db(db_name)  // Required, as earlier stages may destroy data.
-          selenium_args = [
-            branch_name: env.BRANCH_NAME,
-            selenium_filter: PIPELINE_CONFIG['selenium_filter'],
-            report_to_testrail: true
-          ]
-          run_selenium(selenium_args)
-        }
       }
 
       currentBuild.result = 'SUCCESS'
