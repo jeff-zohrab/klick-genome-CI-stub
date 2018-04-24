@@ -1,3 +1,3 @@
-skip: nunit
+# skip: nunit
 selenium_filter: my_filter
 slack_channel: mychannel
