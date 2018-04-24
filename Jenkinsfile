@@ -169,7 +169,9 @@ def override_config_for_branch(config, branch_name) {
     return config
 
   rawfile = readFile file: filename, encoding: 'ascii'
-  lines = rawfile.split("\n").collect { it.trim() }
+  lines = rawfile.
+    split("\n").
+    collect { it.trim() }
   echo "Got lines: ${lines}"
   echo "xxxxxxxxxxxxxxxxxxxxxxx"
 
