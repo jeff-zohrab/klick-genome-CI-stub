@@ -172,6 +172,7 @@ def override_config_for_branch(config, branch_name) {
   for (line in rawfile.split("\n")) {
     s = line.trim()
     if (!s.startsWith('#') && s != '') {
+      echo "Processing line: ${s}"
       tmp = s + ' '  // Hack in case the line = '<key>:',
                      // which causes an ArrayIndexOutOfBoundsException
                      // when split.
