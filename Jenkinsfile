@@ -163,7 +163,7 @@ def optional_stage(stage_name, stage_closure) {
 
 def setup_db() {
   optional_stage('Setup db') {
-    reset_and_migrate_db(DB_NAME)
+    reset_and_migrate_db()
   }
 }
 
@@ -235,7 +235,7 @@ def ui_testing(args_map) {
   stage('Run Selenium test') {
     configure_iis_and_start_site()
     bat 'rake compileqaattributedecorator compileqauitesting'
-    reset_and_migrate_db(DB_NAME)  // Required, as earlier stages may destroy data.
+    reset_and_migrate_db()  // Required, as earlier stages may destroy data.
     selenium_args = [
       branch_name: env.BRANCH_NAME,
       selenium_filter: args_map.selenium_filter,
