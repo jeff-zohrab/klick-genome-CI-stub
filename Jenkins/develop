@@ -7,5 +7,5 @@ nunit_filter: cat == nunit_filter_somevalue
 bad_line:
 somethingwithcolon: hello:there
 
-
+garbage_no_colon
 # Comments!

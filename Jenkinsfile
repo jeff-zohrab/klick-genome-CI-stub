@@ -152,13 +152,12 @@ def get_pipeline_config(branch_name) {
   ]
   config = override_config_for_branch(config, branch_name)
 
-  echo "skipping the following: ${config['skip']}"
-  skip = config['skip'].split(',')
-  skip = skip.collect { it.trim() }.collect { it.toLowerCase() }
-  config['skip'] = skip
-
+  def tmp = config['skip'].
+             split(',').
+             collect { it.trim() }.
+             collect { it.toLowerCase() }
+  config['skip'] = tmp
   echo "Got pipeline config: ${config}"
-  echo "xxxxxxxxxxxxxxxxxxxxxxxx"  // TODO - remove this
   return config
 }
 
@@ -174,11 +173,9 @@ def override_config_for_branch(config, branch_name) {
     collect { s -> s.trim() }.
     findAll { s -> !s.startsWith('#') }.
     findAll { s -> s != '' }.
-    collect { s -> s + ' ' }   // parser hack, see below.
-  echo "Got lines: ${lines}"
-  echo "xxxxxxxxxxxxxxxxxxxxxxx"
-
-  // Parser hack adds a space in case the line = '<key>:',
+    findAll { s -> s.contains(':') }.
+    collect { s -> s + ' ' }   // Hack, see below.
+  // Hack adds a space in case the line = '<key>:',
   // which causes an ArrayIndexOutOfBoundsException
   // when split.
 
