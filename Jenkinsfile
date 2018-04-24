@@ -37,24 +37,43 @@ node('sensei_build') {
 
     try {
       checkout(code_github_org, code_repo_name)
+      configure(db_name)
 
       def pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
       SKIP_STAGES = pipeline_config['skip']
-      slack_channel = pipeline_config['slack_channel']
+      slack_channel = get_slack_channel(pipeline_config)
 
-      configure(db_name)
-      if (env.BRANCH_NAME == 'develop') {
-        lock_schema_migrations()
-      }
+      lock_schema_migrations_if_on_develop_branch()
       setup_db(db_name)
-      build_and_unit_test(pipeline_config['nunit_filter'])
-      if (pipeline_config.containsKey('selenium_filter')) {
+
+      if (isDevelop()) {
+        build_and_unit_test()
+      }
+      else if (isMaster()) {
+        build_and_unit_test()
+      }
+      else if (isRelease()) {
+        build_and_unit_test(pipeline_config.get('nunit_filter', ''))
         ui_testing([
           db_name: db_name,
-          selenium_filter: pipeline_config['selenium_filter'],
-          report_to_testrail: false,
-          fail_on_error: true
+          selenium_filter: pipeline_config.get('selenium_filter', ''),
+          report_to_testrail: true,
+          fail_on_error: false
         ])
+      }
+      else if (isFeatureOrHotfix()) {
+        build_and_unit_test(pipeline_config.get('nunit_filter', ''))
+        if (pipeline_config.containsKey('selenium_filter')) {
+          ui_testing([
+            db_name: db_name,
+            selenium_filter: pipeline_config['selenium_filter'],
+            report_to_testrail: false,
+            fail_on_error: true
+          ])
+        }
+      }
+      else {
+        error "Unknown branch type (branch = ${env.BRANCH_NAME})"
       }
 
       currentBuild.result = 'SUCCESS'
@@ -79,6 +98,19 @@ node('sensei_build') {
 
 ///////////////////////////////////////////////////
 // Helpers
+
+def isDevelop() {
+  return (env.BRANCH_NAME == 'develop')
+}
+def isMaster() {
+  return (env.BRANCH_NAME == 'master')
+}
+def isRelease() {
+  return (env.BRANCH_NAME.startsWith('release'))
+}
+def isFeatureOrHotfix() {
+  return (env.BRANCH_NAME.startsWith('feature') || env.BRANCH_NAME.startsWith('hotfix'))
+}
 
 
 def checkout(code_github_org, code_repo_name) {
@@ -108,6 +140,16 @@ def configure(db_name) {
   }
 }
 
+def get_slack_channel(pipeline_config) {
+  def ret = 'jenkins'
+  if (isDevelop() || isMaster() || isRelease())
+    ret = 'jenkins'
+  else
+    ret = pipeline_config['slack_channel']
+  echo "Using slack channel: ${ret}"
+  return ret
+}
+
 
 // Users can skip steps included in the "skip" list in the Jenkins config file.
 def optional_stage(stage_name, stage_closure) {
@@ -134,7 +176,14 @@ def reset_and_migrate_db(db_name) {
   }
 }
 
-def lock_schema_migrations() {
+// Lock migrations until old schema migrations are phased out
+// (see https://senseilabs.atlassian.net/browse/DEVOPS-50)
+def lock_schema_migrations_if_on_develop_branch() {
+  if (!isDevelop()) {
+    echo "Skipping schema locking for non-develop branch."
+    return
+  }
+
   stage('Lock schema migrations') {
     withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
       withEnv(["ENV_USER=${U}", "ENV_PASS=${P}"]) {
