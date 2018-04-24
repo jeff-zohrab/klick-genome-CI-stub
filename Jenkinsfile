@@ -70,7 +70,9 @@ node('sensei_build') {
         }
       }
       else {
-        error "Unknown branch type (branch = ${env.BRANCH_NAME})"
+        stage('Unknown branch type') {
+          error "Unknown branch type (branch = ${env.BRANCH_NAME})"
+	}
       }
 
       currentBuild.result = 'SUCCESS'
