@@ -47,6 +47,7 @@ node('sensei_build') {
 
       if (isDevelop()) {
         build_and_unit_test()
+        genome.tag_UT()
       }
       else if (isMaster()) {
         build_and_unit_test()
@@ -72,7 +73,7 @@ node('sensei_build') {
       else {
         stage('Unknown branch type') {
           error "Unknown branch type (branch = ${env.BRANCH_NAME})"
-	}
+        }
       }
 
       currentBuild.result = 'SUCCESS'
