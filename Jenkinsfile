@@ -40,21 +40,8 @@ node('sensei_build') {
   ws("c:\\www\\genome") {
 
     try {
-      stage('Checkout') {
-        genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
-        cleanWs()
-        checkout_args = [
-          workspace_dir: env.WORKSPACE,
-          branch_name: env.BRANCH_NAME,
-          github_org: code_github_org,
-          repo_name: code_repo_name,
-          ref_repo_parent_dir: 'c:\\reference_repo',
-          creds_id: 'github-ci'
-        ]
-        githelper.checkout_from_reference_repo(checkout_args)
-        PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
-        slack_channel = PIPELINE_CONFIG['slack_channel']
-      }
+      checkout(code_github_org, code_repo_name)
+      slack_channel = PIPELINE_CONFIG['slack_channel']
 
       stage('Config') {
         genome.create_web_config(db_name)
@@ -128,6 +115,24 @@ node('sensei_build') {
 
 ///////////////////////////////////////////////////
 // Helpers
+
+
+def checkout(code_github_org, code_repo_name) {
+  stage('Checkout') {
+    genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
+    cleanWs()
+    checkout_args = [
+      workspace_dir: env.WORKSPACE,
+      branch_name: env.BRANCH_NAME,
+      github_org: code_github_org,
+      repo_name: code_repo_name,
+      ref_repo_parent_dir: 'c:\\reference_repo',
+      creds_id: 'github-ci'
+    ]
+    githelper.checkout_from_reference_repo(checkout_args)
+    PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
+  }
+}
 
 
 // Users can skip steps.
