@@ -8,13 +8,10 @@ import groovy.transform.Field
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
 @Library('genome') _   // Shared library in Jenkins.
 
-// Users can tailor parts of pipeline using config files
-// See Jenkins/README.md.
-// Using a global variable (!) to allow for the optional_stage helper method.
+// Users can skip stages using config files (see Jenkins/README.md).
+// The global variable (!) allows for the optional_stage helper method.
 // ref https://stackoverflow.com/questions/6305910/
 //    how-do-i-create-and-access-the-global-variables-in-groovy
-@Field Map PIPELINE_CONFIG = null
-
 @Field String[] SKIP_STAGES = null
 
 // Shared library instances.
@@ -40,19 +37,21 @@ node('sensei_build') {
 
     try {
       checkout(code_github_org, code_repo_name)
-      PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
-      SKIP_STAGES = PIPELINE_CONFIG['skip']
-      slack_channel = PIPELINE_CONFIG['slack_channel']
+
+      def pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
+      SKIP_STAGES = pipeline_config['skip']
+      slack_channel = pipeline_config['slack_channel']
+
       configure(db_name)
       if (env.BRANCH_NAME == 'develop') {
         lock_schema_migrations()
       }
       setup_db(db_name)
-      build_and_unit_test(PIPELINE_CONFIG['nunit_filter'])
-      if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
+      build_and_unit_test(pipeline_config['nunit_filter'])
+      if (pipeline_config.containsKey('selenium_filter')) {
         ui_testing([
           db_name: db_name,
-          selenium_filter: PIPELINE_CONFIG['selenium_filter'],
+          selenium_filter: pipeline_config['selenium_filter'],
           report_to_testrail: false,
           fail_on_error: true
         ])
