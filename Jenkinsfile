@@ -158,6 +158,7 @@ def get_pipeline_config(branch_name) {
   config['skip'] = skip
 
   echo "Got pipeline config: ${config}"
+  echo "******************************"  // TODO - remove this
   return config
 }
 
