@@ -51,9 +51,9 @@ node('sensei_build') {
       }
 
       setup_db(db_name)
-      full_build_and_unit_test()
+      build_and_unit_test()
       if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
-        ui_testing([db_name: db_name, report_to_testrail: true, fail_on_error: true])
+        ui_testing([db_name: db_name, report_to_testrail: false, fail_on_error: true])
       }
 
       currentBuild.result = 'SUCCESS'
@@ -147,7 +147,7 @@ def lock_schema_migrations() {
   }
 }
 
-def full_build_and_unit_test() {
+def build_and_unit_test() {
   build_back_end()
   test_back_end()
   build_front_end()
