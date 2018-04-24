@@ -51,9 +51,10 @@ node('sensei_build') {
       }
 
       setup_db(db_name)
-      full_build_and_UT()
+      full_build_and_unit_test()
 
       if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
+        ui_testing([db_name: db_name, fail_on_error: true, report_to_testrail: true])
         stage('Run Selenium test') {
           configure_iis_and_start_site()
           bat 'rake compileqaattributedecorator compileqauitesting'
@@ -158,7 +159,7 @@ def lock_schema_migrations() {
   }
 }
 
-def full_build_and_UT() {
+def full_build_and_unit_test() {
   build_back_end()
   test_back_end()
   build_front_end()
@@ -197,6 +198,28 @@ def run_nunit(nunit_filter) {
     nunit testResultsPattern: 'nunit-result.xml'
   }
 }
+
+def ui_testing(args_map) {
+  echo "Got args: ${args_map}"
+  stage('Run Selenium test') {
+    configure_iis_and_start_site()
+    bat 'rake compileqaattributedecorator compileqauitesting'
+    reset_and_migrate_db(args_map.db_name)  // Required, as earlier stages may destroy data.
+    selenium_args = [
+      branch_name: env.BRANCH_NAME,
+      selenium_filter: PIPELINE_CONFIG['selenium_filter'],
+      report_to_testrail: args_map.report_to_testrail
+    ]
+
+    if (args_map.fail_on_error) {
+      run_selenium(selenium_args)
+    }
+    else {
+      run_selenium_no_fail(selenium_args)
+    }
+  }
+}
+
 
 // Jenkins deletes the workspace, which appears to confuse IIS.
 // Setting everything up afresh for the run.
