@@ -38,7 +38,7 @@ node('sensei_build') {
       checkout(code_github_org, code_repo_name)
       configure()
 
-      def pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
+      def pipeline_config = get_pipeline_config(env.BRANCH_NAME)
       SKIP_STAGES = pipeline_config['skip']
       slack_channel = get_slack_channel(pipeline_config)
 
@@ -137,12 +137,61 @@ def configure() {
   }
 }
 
+
+// ============================================
+// Pipeline configuration.
+//
+// Users can tweak the pipeline for their branches
+// using config files in the "Jenkins" directory.
+
+def get_pipeline_config(branch_name) {
+  def config = [
+    'skip': '',
+    'nunit_filter': '',
+    'slack_channel': ''
+  ]
+  config = override_config_for_branch(config, branch_name)
+
+  echo "skipping the following: ${config['skip']}"
+  skip = config['skip'].split(',')
+  skip = skip.collect { it.trim() }.collect { it.toLowerCase() }
+  config['skip'] = skip
+
+  echo "Got pipeline config: ${config}"
+  return config
+}
+
+
+def override_config_for_branch(config, branch_name) {
+  filename = 'Jenkins/' + branch_name.replaceAll('/', '_')
+  if (!fileExists(filename))
+    return config
+
+  rawfile = readFile file: filename, encoding: 'ascii'
+  // rawfile.eachLine doesn't work!
+  for (line in rawfile.split("\n")) {
+    s = line.trim()
+    if (!s.startsWith('#') && s != '') {
+      tmp = s + ' '  // Hack in case the line = '<key>:',
+                     // which causes an ArrayIndexOutOfBoundsException
+                     // when split.
+      (var, value) = tmp.split(':')
+      config << [(var.trim()): (value.trim())]
+    }
+  }
+
+  return config
+}
+
+// ============================================
+
+
 def get_slack_channel(pipeline_config) {
   def ret = 'jenkins'
   if (isDevelop() || isMaster() || isRelease())
     ret = 'jenkins'
   else
-    ret = pipeline_config['slack_channel']
+    ret = pipeline_config.get('slack_channel', '')
   echo "Using slack channel: ${ret}"
   return ret
 }
