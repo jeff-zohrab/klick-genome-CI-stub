@@ -42,16 +42,7 @@ node('sensei_build') {
     try {
       checkout(code_github_org, code_repo_name)
       slack_channel = PIPELINE_CONFIG['slack_channel']
-
-      stage('Config') {
-        genome.create_web_config(db_name)
-        writeFile file: 'site.cfg', text: "jenkins_${env.NODE_NAME}"
-        writeFile file: 'theme.cfg', text: 'genome'
-        bat 'rake jenkins:fix_configs generateManifest'
-        bat 'rake nlog:use_config[NLog.config.Jenkins]'
-        bat 'rake rakefile:validate'
-        powershell 'Set-Timezone -Name "Eastern Standard Time"'
-      }
+      configure(db_name)
 
       if (env.BRANCH_NAME == 'develop') {
         stage('Lock schema migrations') {
@@ -134,15 +125,26 @@ def checkout(code_github_org, code_repo_name) {
   }
 }
 
+def configure(db_name) {
+  stage('Config') {
+    genome.create_web_config(db_name)
+    writeFile file: 'site.cfg', text: "jenkins_${env.NODE_NAME}"
+    writeFile file: 'theme.cfg', text: 'genome'
+    bat 'rake jenkins:fix_configs generateManifest'
+    bat 'rake nlog:use_config[NLog.config.Jenkins]'
+    powershell 'Set-Timezone -Name "Eastern Standard Time"'
+  }
+}
 
-// Users can skip steps.
-// Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
+
+// Users can skip steps included in the "skip" list in the Jenkins config file.
 def optional_stage(stage_name, stage_closure) {
   if (PIPELINE_CONFIG['skip'].contains(stage_name.toLowerCase())) {
     echo "Skipping ${stage_name}"
     return
   }
 
+  // Ref http://mrhaki.blogspot.ca/2009/11/groovy-goodness-passing-closures-to.html
   stage(stage_name) {
     stage_closure()
   }
