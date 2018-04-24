@@ -50,31 +50,14 @@ node('sensei_build') {
         }
       }
 
-      optional_stage('Setup db') {
-        setup_db(db_name)
-      }
-
-      optional_stage('Compile back end') {
-        bat 'rake migrateschemacheck base'
-      }
-
-      optional_stage('NUnit') {
-        run_nunit(PIPELINE_CONFIG['nunit_filter'])
-      }
-
-      optional_stage('Compile client') {
-        bat 'rake compileClient'
-      }
-
-      optional_stage('Npm test') {
-        bat 'npm test -- --single-run'
-      }
+      setup_db(db_name)
+      full_build_and_UT()
 
       if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
         stage('Run Selenium test') {
           configure_iis_and_start_site()
           bat 'rake compileqaattributedecorator compileqauitesting'
-          setup_db(db_name)  // Required, as earlier stages may destroy data.
+          reset_and_migrate_db(db_name)  // Required, as earlier stages may destroy data.
           selenium_args = [
             branch_name: env.BRANCH_NAME,
             selenium_filter: PIPELINE_CONFIG['selenium_filter'],
@@ -151,6 +134,12 @@ def optional_stage(stage_name, stage_closure) {
 }
 
 def setup_db(db_name) {
+  optional_stage('Setup db') {
+    reset_and_migrate_db(db_name)
+  }
+}
+
+def reset_and_migrate_db(db_name) {
   timeout(10) { // minutes
     bat "rake resetdb[\"$db_name\"] migrateschema"
   }
@@ -166,6 +155,37 @@ def lock_schema_migrations() {
       // sapping pipeline resources.
       // powershell "Scripts\\Jenkins\\develop_cleanup\\remove_old_jenkins_config_files.ps1 -branch ${env.BRANCH_NAME}"
     }
+  }
+}
+
+def full_build_and_UT() {
+  build_back_end()
+  test_back_end()
+  build_front_end()
+  test_front_end()
+}
+
+def build_back_end() {
+  optional_stage('Compile back end') {
+    bat 'rake migrateschemacheck base'
+  }
+}
+
+def test_back_end() {
+  optional_stage('NUnit') {
+    run_nunit(PIPELINE_CONFIG['nunit_filter'])
+  }
+}
+
+def build_front_end() {
+  optional_stage('Compile client') {
+    bat 'rake compileClient'
+  }
+}
+
+def test_front_end() {
+  optional_stage('Npm test') {
+    bat 'npm test -- --single-run'
   }
 }
 
