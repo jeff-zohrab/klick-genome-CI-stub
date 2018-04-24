@@ -99,12 +99,15 @@ node('sensei_build') {
 def isDevelop() {
   return (env.BRANCH_NAME == 'develop')
 }
+
 def isMaster() {
   return (env.BRANCH_NAME == 'master')
 }
+
 def isRelease() {
   return (env.BRANCH_NAME.startsWith('release'))
 }
+
 def isFeatureOrHotfix() {
   return (env.BRANCH_NAME.startsWith('feature') || env.BRANCH_NAME.startsWith('hotfix'))
 }
@@ -138,12 +141,8 @@ def configure() {
 }
 
 
-// ============================================
-// Pipeline configuration.
-//
 // Users can tweak the pipeline for their branches
 // using config files in the "Jenkins" directory.
-
 def get_pipeline_config(branch_name) {
   def config = [
     'skip': '',
@@ -166,7 +165,6 @@ def override_config_for_branch(config, branch_name) {
   filename = 'Jenkins/' + branch_name.replaceAll('/', '_')
   if (!fileExists(filename))
     return config
-
   rawfile = readFile file: filename, encoding: 'ascii'
   lines = rawfile.
     split("\n").
@@ -187,8 +185,6 @@ def override_config_for_branch(config, branch_name) {
 
   return config
 }
-
-// ============================================
 
 
 def get_slack_channel(pipeline_config) {
@@ -215,17 +211,20 @@ def optional_stage(stage_name, stage_closure) {
   }
 }
 
+
 def setup_db() {
   optional_stage('Setup db') {
     reset_and_migrate_db()
   }
 }
 
+
 def reset_and_migrate_db() {
   timeout(10) { // minutes
     bat "rake resetdb[\"$DB_NAME\"] migrateschema"
   }
 }
+
 
 // Lock migrations until old schema migrations are phased out
 // (see https://senseilabs.atlassian.net/browse/DEVOPS-50)
@@ -248,6 +247,7 @@ def lock_schema_migrations_if_on_develop_branch() {
   }
 }
 
+
 def build_and_unit_test(nunit_filter = '') {
   build_back_end()
   test_back_end(nunit_filter)
@@ -255,11 +255,13 @@ def build_and_unit_test(nunit_filter = '') {
   test_front_end()
 }
 
+
 def build_back_end() {
   optional_stage('Compile back end') {
     bat 'rake migrateschemacheck base'
   }
 }
+
 
 def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
@@ -272,17 +274,20 @@ def test_back_end(nunit_filter) {
   }
 }
 
+
 def build_front_end() {
   optional_stage('Compile client') {
     bat 'rake compileClient'
   }
 }
 
+
 def test_front_end() {
   optional_stage('Npm test') {
     bat 'npm test -- --single-run'
   }
 }
+
 
 def ui_testing(args_map) {
   echo "Got args: ${args_map}"
@@ -359,6 +364,7 @@ def run_selenium_no_fail(selenium_args) {
   }
 }
 
+
 def run_selenium_script(selenium_args) {
   timeout(120) {  // minutes
     powershell """QA\\Jenkins\\run_test.ps1 `
@@ -367,6 +373,7 @@ def run_selenium_script(selenium_args) {
       -branch_name ${selenium_args.branch_name}"""
   }
 }
+
 
 def publish_selenium_artifacts() {
   def artifact_pattern = 'QA\\UITesting\\SenseiOS.UI.Tests\\bin\\Debug\\Artifacts\\*.*'
