@@ -1,3 +1,3 @@
 skip: TESTING
-nunit_filter: cat == nunit_filter:somevalue
-selenium_filter: cat == selenium_filter:somevalue
+nunit_filter: cat == nunit_filter_somevalue
+selenium_filter: cat == selenium_filter_somevalue
