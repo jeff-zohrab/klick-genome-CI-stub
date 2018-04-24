@@ -158,7 +158,7 @@ def get_pipeline_config(branch_name) {
   config['skip'] = skip
 
   echo "Got pipeline config: ${config}"
-  echo "******************************"  // TODO - remove this
+  echo "xxxxxxxxxxxxxxxxxxxxxxxx"  // TODO - remove this
   return config
 }
 
@@ -169,6 +169,10 @@ def override_config_for_branch(config, branch_name) {
     return config
 
   rawfile = readFile file: filename, encoding: 'ascii'
+  lines = rawfile.split("\n").collect { it.trim() }
+  echo lines
+  echo "xxxxxxxxxxxxxxxxxxxxxxx"
+
   // rawfile.eachLine doesn't work!
   for (line in rawfile.split("\n")) {
     s = line.trim()
