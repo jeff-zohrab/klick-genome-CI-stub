@@ -1,0 +1,11 @@
+# SOME COMMENTS
+skip: NUnit
+nunit_filter: cat == nunit_filter_somevalue
+# COMMENT
+   selenium_filter: cat == selenium_filter_somevalue
+       slack_channel: jenkins-dev-tests
+bad_line:
+somethingwithcolon: hello:there
+
+
+# Comments!
