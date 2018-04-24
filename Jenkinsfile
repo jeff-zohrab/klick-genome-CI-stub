@@ -12,7 +12,7 @@ import groovy.transform.Field
 // The global variable (!) allows for the optional_stage helper method.
 // ref https://stackoverflow.com/questions/6305910/
 //    how-do-i-create-and-access-the-global-variables-in-groovy
-@Field String[] SKIP_STAGES = null
+@Field String[] SKIP_STAGES = []
 
 // Shared library instances.
 genome = new org.klick.Genome()
