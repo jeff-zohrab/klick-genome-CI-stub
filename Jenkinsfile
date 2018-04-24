@@ -180,7 +180,7 @@ def override_config_for_branch(config, branch_name) {
   // rawfile.eachLine doesn't work!
   for (line in lines) {
     def colon_pos = line.indexOf(':')
-    def key = line.substring(0, colon_pos - 1)
+    def key = line.substring(0, colon_pos)
     def value = line.substring(colon_pos, line.length())
     // (key, value) = line.split(':')
     config << [(key.trim()): (value.trim())]
