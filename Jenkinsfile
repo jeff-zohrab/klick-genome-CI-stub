@@ -39,7 +39,7 @@ node('sensei_build') {
       checkout(code_github_org, code_repo_name)
 
       def pipeline_config = genome.get_pipeline_config(env.BRANCH_NAME)
-      SKIP_STAGES = pipeline_config['skip']
+      // SKIP_STAGES = pipeline_config['skip']
       slack_channel = pipeline_config['slack_channel']
 
       configure(db_name)
