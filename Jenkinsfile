@@ -181,7 +181,7 @@ def override_config_for_branch(config, branch_name) {
   for (line in lines) {
     def colon_pos = line.indexOf(':')
     def key = line.substring(0, colon_pos - 1)
-    def value = line.substring(colon_pos, line.length)
+    def value = line.substring(colon_pos, line.length())
     // (var, value) = line.split(':')
     config << [(var.trim()): (value.trim())]
   }
