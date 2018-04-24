@@ -15,6 +15,8 @@ import groovy.transform.Field
 //    how-do-i-create-and-access-the-global-variables-in-groovy
 @Field Map PIPELINE_CONFIG = null
 
+@Field String[] SKIP_STAGES = null
+
 // Shared library instances.
 genome = new org.klick.Genome()
 githelper = new org.klick.Git()
@@ -39,6 +41,7 @@ node('sensei_build') {
     try {
       checkout(code_github_org, code_repo_name)
       PIPELINE_CONFIG = genome.get_pipeline_config(env.BRANCH_NAME)
+      SKIP_STAGES = PIPELINE_CONFIG['skip']
       slack_channel = PIPELINE_CONFIG['slack_channel']
       configure(db_name)
       if (env.BRANCH_NAME == 'develop') {
@@ -109,7 +112,7 @@ def configure(db_name) {
 
 // Users can skip steps included in the "skip" list in the Jenkins config file.
 def optional_stage(stage_name, stage_closure) {
-  if (PIPELINE_CONFIG['skip'].contains(stage_name.toLowerCase())) {
+  if (SKIP_STAGES.contains(stage_name.toLowerCase())) {
     echo "Skipping ${stage_name}"
     return
   }

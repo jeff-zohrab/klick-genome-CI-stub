@@ -1,4 +1,4 @@
-skip: TESTING
+skip: NUnit
 nunit_filter: cat == nunit_filter_somevalue
 selenium_filter: cat == selenium_filter_somevalue
 slack_channel: jenkins-dev-tests
