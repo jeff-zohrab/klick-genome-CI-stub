@@ -200,7 +200,7 @@ def ui_testing(args_map) {
     reset_and_migrate_db(args_map.db_name)  // Required, as earlier stages may destroy data.
     selenium_args = [
       branch_name: env.BRANCH_NAME,
-      selenium_filter: args.selenium_filter,
+      selenium_filter: args_map.selenium_filter,
       report_to_testrail: args_map.report_to_testrail
     ]
 
