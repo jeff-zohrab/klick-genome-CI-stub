@@ -3,10 +3,11 @@
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import groovy.transform.Field
 
-// Shared libraries.
-// Configured in https://ci.senseilabs.com/configure.
+// Shared libraries, configured in https://ci.senseilabs.com/configure.
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
-@Library('genome') _   // Shared library in Jenkins.
+@Library('genome') _
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
 
 // Users can skip stages using config files (see Jenkins/README.md).
 // The global variable (!) allows for the optional_stage helper method.
@@ -16,10 +17,6 @@ import groovy.transform.Field
 
 // Unique db per Jenkins node/executor.
 @Field String DB_NAME = ""
-
-// Shared library instances.
-genome = new org.klick.Genome()
-githelper = new org.klick.Git()
 
 
 node('sensei_build') {
