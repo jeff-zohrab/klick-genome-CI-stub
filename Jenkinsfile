@@ -225,15 +225,11 @@ def run_selenium_no_fail(selenium_args) {
 }
 
 def run_selenium_script(selenium_args) {
-  def selenium_filter = selenium_args.selenium_filter
-  def report_to_testrail = selenium_args.report_to_testrail
-  def branch_name = selenium_args.branch_name
-
   timeout(120) {  // minutes
     powershell """QA\\Jenkins\\run_test.ps1 `
-      -nunit_filter \"$selenium_filter\" `
-      -report_to_testrail ${report_to_testrail} `
-      -branch_name ${branch_name}"""
+      -nunit_filter \"${selenium_args.selenium_filter}\" `
+      -report_to_testrail ${selenium_args.report_to_testrail} `
+      -branch_name ${selenium_args.branch_name}"""
   }
 }
 
