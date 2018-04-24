@@ -15,6 +15,10 @@ import groovy.transform.Field
 //    how-do-i-create-and-access-the-global-variables-in-groovy
 @Field Map PIPELINE_CONFIG = null
 
+// Shared library instances.
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
+
 
 node('sensei_build') {
 
@@ -28,10 +32,6 @@ node('sensei_build') {
   // Each Jenkins node/executor gets its own DB.
   // db_name must start with "intranet_jnk_" (see UnitTests/DatabaseTestBase.cs)
   def db_name = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
-
-  // Shared library instances.
-  def genome = new org.klick.Genome()
-  def githelper = new org.klick.Git()
 
   // The GitHub plugin creates unusable directory names
   // (ref https://issues.jenkins-ci.org/browse/JENKINS-38706),
