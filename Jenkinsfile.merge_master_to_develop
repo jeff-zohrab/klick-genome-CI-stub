@@ -89,13 +89,41 @@ def merge() {
   echo "todo"
 }
 
+def files_with_conflicts() {
+  return ['a.txt', 'b.txt', 'c.txt', 'd.txt', 'e.txt', 'f.txt']
+}
+
 def have_conflicts() {
   echo "todo"
   return true
 }
 
 def report_conflicts() {
-  echo "todo"
+  def files = files_with_conflicts()
+  def top_files = files.take(5)
+  report_top_files = top_files.collect { s -> " * ${s} }
+  def addendum = ''
+  if (files.length > 5) {
+    addendum = "_... and ${files.length - 5} more_"
+  }
+
+  def msg = """*Merge of master into develop failed.*
+
+Conflicts:
+${report_top_files.join('\n')}
+${addendum}
+
+Please create a new feature off of develop,
+and merge master into it, resolving the conflicts
+as usual.
+
+${env.Job_URL} (number ${currentBuild.number})"
+
+  slackSend channel: "#jenkins-dev-tests",
+    color: '#ff0000',
+    message: formatted_message,
+    teamDomain: 'senseilabs',
+    tokenCredentialId: 'senseilabs-slack-token'
 }
 
 def push_merged_branch() {
