@@ -107,7 +107,7 @@ def report_conflicts() {
     addendum = "_... and ${files.size() - 5} more_"
   }
 
-  def msg = """*Merge of master into develop failed.*
+  def formatted_message = """*Merge of master into develop failed.*
 
 Conflicts:
 ${report_top_files.join('\n')}
