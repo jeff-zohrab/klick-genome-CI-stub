@@ -101,7 +101,7 @@ def have_conflicts() {
 def report_conflicts() {
   def files = files_with_conflicts()
   def top_files = files.take(5)
-  report_top_files = top_files.collect { s -> " * ${s} }
+  report_top_files = top_files.collect { s -> " * ${s}" }
   def addendum = ''
   if (files.length > 5) {
     addendum = "_... and ${files.length - 5} more_"
