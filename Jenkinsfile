@@ -1,6 +1,7 @@
 // Sensei build Jenkins pipeline.
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import java.text.SimpleDateFormat
 import groovy.transform.Field
 
 // Shared libraries, configured in https://ci.senseilabs.com/configure.
@@ -47,7 +48,7 @@ node('sensei_build') {
 
       if (isDevelop()) {
         build_and_unit_test()
-        genome.tag_UT([branch_name: 'develop', creds_id: 'github-ci', github_org: code_github_org, repo_name: code_repo_name])
+        tag_UT()
       }
       else if (isMaster()) {
         build_and_unit_test()
@@ -291,6 +292,28 @@ def test_front_end() {
   optional_stage('Npm test') {
     bat 'npm test -- --single-run'
   }
+}
+
+
+def add_tag(name, message) {
+  args = [
+    tag_name: name,
+    tag_message: message,
+    tag_user_name: 'sensei-jenkins@ci.senseilabs.com',
+    tag_user_email: 'sensei-jenkins',
+    github_org: code_github_org,
+    repo_name: code_repo_name,
+    creds_id: 'github-ci'
+  ]
+  githelper.add_tag(args)
+}
+
+
+def tag_UT() {
+  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
+  def date = new Date()
+  def tagname = "UT_" + dateFormat.format(date)
+  add_tag(tagname, "Unit tests passed.")
 }
 
 
