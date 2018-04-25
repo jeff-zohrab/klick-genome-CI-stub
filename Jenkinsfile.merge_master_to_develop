@@ -100,7 +100,7 @@ def fetch_latest_master() {
       repo_name: CODE_REPO_NAME
     ]
     with_upstream_context(args) {
-      def cmd = "git fetch --depth=10 --no-tags upstream master:refs/remotes/upstream/master"
+      def cmd = "git fetch --depth=10 --no-tags upstream master:refs/remotes/upstream/${master}"
       echo "Running: ${cmd}"
       bat cmd
     }
