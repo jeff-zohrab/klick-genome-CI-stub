@@ -1,2 +1,2 @@
-skip: NUnit
+# skip: NUnit
 # nunit_filter: cat == nunit_filter_somevalue
