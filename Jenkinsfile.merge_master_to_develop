@@ -96,11 +96,13 @@ def push_merged_branch() {
 
 
 def files_with_conflicts() {
-  return []
-  // return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
+  // return []
+  return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
 
 def have_conflicts() {
+  echo "XXXXXXXXXXXXX checking conflicts:"
+  echo files_with_conflicts()
   return (files_with_conflicts().size() > 0)
 }
 
