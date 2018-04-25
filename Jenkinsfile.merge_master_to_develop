@@ -91,7 +91,7 @@ def merge() {
 
 def have_conflicts() {
   echo "todo"
-  return false
+  return true
 }
 
 def report_conflicts() {
