@@ -106,9 +106,9 @@ def fetch_latest_master() {
       def cmd = "git fetch --depth=10 --no-tags upstream master:refs/remotes/upstream/master"
       echo "Running: ${cmd}"
       bat cmd
-      bat "git branch"
-      bat "git branch -r"
     }
+    bat "git branch"
+    bat "git branch -r"
   }
 }
 
