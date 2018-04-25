@@ -123,15 +123,10 @@ def merge() {
     with_upstream_context(args) {
       bat "git branch"
       bat "git branch -r"
-      bat_no_fail("git branch -D master")
-      def cmd = ""
-      cmd = "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
-      echo "Running: ${cmd}"
-      bat cmd
-      cmd = "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
-      echo "Running: ${cmd}"
-      bat cmd
-      bat "git merge upstream/master"
+      bat "git branch -D master"
+      bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+      bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
+      bat_no_fail("git merge upstream/master")  // Merge conflicts raise an error.
       bat "git status"
     }
     bat "git branch"
