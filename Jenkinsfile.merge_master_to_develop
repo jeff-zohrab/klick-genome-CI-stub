@@ -102,7 +102,7 @@ def files_with_conflicts() {
 
 def have_conflicts() {
   echo "XXXXXXXXXXXXX checking conflicts:"
-  echo files_with_conflicts()
+  echo "Files: ${files_with_conflicts()}"
   return (files_with_conflicts().size() > 0)
 }
 
