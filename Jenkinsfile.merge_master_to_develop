@@ -157,7 +157,10 @@ def push_merged_branch() {
 def files_with_conflicts() {
   def conflicts = ""
   conflicts = bat returnStdout: true, script: 'git diff --name-only --diff-filter=U'
-  return conflicts.split("\n")
+  return conflicts.
+    split("\n").
+    collect { it.strip() != '' }
+    findAll { !it.contains('git diff') }
   // return []
   // return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
