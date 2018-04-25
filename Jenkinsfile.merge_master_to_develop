@@ -74,3 +74,23 @@ def checkout() {
   }
 }
 
+def fetch_latest(branch_name) {
+  echo "todo"
+}
+
+def merge() {
+  echo "todo"
+}
+
+def have_conflicts() {
+  echo "todo"
+  return false
+}
+
+def report_conflicts() {
+  echo "todo"
+}
+
+def push_merged_branch() {
+  echo "todo"
+}
