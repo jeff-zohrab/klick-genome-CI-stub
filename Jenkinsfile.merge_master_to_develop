@@ -32,8 +32,9 @@ node('sensei_build') {
       currentBuild.result = 'ABORTED'
     }
     catch(err) {
-      echo "Error: ${err}"
-      report_failure(err)
+      def msg = "Error: ${err}"
+      echo msg
+      report_failure(msg)
       currentBuild.result = 'FAILURE'
     }
     finally {
