@@ -118,15 +118,15 @@ def build_formatted_failure_message() {
 
   return """*Merge of master into develop failed.*
 
-  Conflicts:
-  ${report_top_files.join('\n')}
-  ${addendum}
+Conflicts:
+${report_top_files.join('\n')}
+${addendum}
 
-  Please create a new feature off of develop,
-  and merge master into it, resolving the conflicts
-  as usual.
+Please create a new feature off of develop,
+and merge master into it, resolving the conflicts
+as usual.
 
-  ${env.Job_URL} (number ${currentBuild.number})"""
+${env.Job_URL} (number ${currentBuild.number})"""
 } // 
 
 def report_conflicts() {
