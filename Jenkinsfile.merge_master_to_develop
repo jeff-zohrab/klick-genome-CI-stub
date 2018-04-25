@@ -141,6 +141,8 @@ def merge() {
       bat_no_fail("git merge upstream/master -m \"Merge master into develop.\"")
 
       bat "git status"
+      bat "git branch"
+      bat "git branch -r"
     }
     bat "git branch"
     bat "git branch -r"
@@ -164,8 +166,6 @@ def files_with_conflicts() {
 }
 
 def have_conflicts() {
-  echo "XXXXXXXXXXXXX checking conflicts:"  // TODO remove
-  echo "Files: ${files_with_conflicts()}"
   return (files_with_conflicts().size() > 0)
 }
 
