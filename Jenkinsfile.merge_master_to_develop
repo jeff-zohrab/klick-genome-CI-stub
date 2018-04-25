@@ -144,7 +144,7 @@ def merge() {
       bat "git checkout upstream/develop -b develop"
 
       // Merge conflicts raise an error, so ignore them for later processing.
-      bat_no_fail("git merge upstream/master -m \"Merge master into develop.\"")
+      bat_no_fail("git merge upstream/master --no-ff -m \"Merge master into develop.\"")
 
       // echo "Branches, before leaving context:"
       // bat "git branch"
