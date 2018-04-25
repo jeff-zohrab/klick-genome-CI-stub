@@ -182,7 +182,7 @@ ${env.Job_URL} (number ${currentBuild.number})"""
 
   slackSend channel: slack_channel,
     color: '#ff0000',
-    message: msg,
+    message: failure_msg,
     teamDomain: 'senseilabs',
     tokenCredentialId: 'senseilabs-slack-token'
 }
