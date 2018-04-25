@@ -26,17 +26,8 @@ node('sensei_build') {
     try {
       checkout()
       fetch_latest('master')
-      merge()
-      if(have_conflicts()) {
-        report_conflicts()
-	currentBuild.result = 'FAILURE'
-      }
-      else {
-        push_merged_branch()
-        currentBuild.result = 'SUCCESS'
-      }
-
-    } // end try
+      try_merge()
+    }
     catch(FlowInterruptedException interruptEx) {
       currentBuild.result = 'ABORTED'
     }
@@ -75,7 +66,23 @@ def checkout() {
 }
 
 def fetch_latest(branch_name) {
-  echo "todo"
+  stage('Fetch master') {
+    echo "todo"
+  }
+}
+
+def try_merge() {
+  stage('Merge') {
+    merge()
+    if(have_conflicts()) {
+      report_conflicts()
+      currentBuild.result = 'FAILURE'
+    }
+    else {
+      push_merged_branch()
+      currentBuild.result = 'SUCCESS'
+    }
+  }
 }
 
 def merge() {
