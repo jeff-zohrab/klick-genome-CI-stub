@@ -19,11 +19,11 @@ githelper = new org.klick.Git()
 // Unique db per Jenkins node/executor.
 @Field String DB_NAME = ""
 
+// Repo:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 
 node('sensei_build') {
-
-  def code_github_org = 'jeff-zohrab'  // TODO - fix this
-  def code_repo_name = 'klick-genome-CI-stub'  // TODO - fix this
 
   // Slack channel to report to.
   def slack_channel = ''
@@ -36,7 +36,7 @@ node('sensei_build') {
   ws("c:\\www\\genome") {
 
     try {
-      checkout(code_github_org, code_repo_name)
+      checkout()
       configure()
 
       def pipeline_config = get_pipeline_config(env.BRANCH_NAME)
@@ -117,15 +117,15 @@ def isFeatureOrHotfix() {
 }
 
 
-def checkout(code_github_org, code_repo_name) {
+def checkout() {
   stage('Checkout') {
     genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
     cleanWs()
     checkout_args = [
       workspace_dir: env.WORKSPACE,
       branch_name: env.BRANCH_NAME,
-      github_org: code_github_org,
-      repo_name: code_repo_name,
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME,
       ref_repo_parent_dir: 'c:\\reference_repo',
       creds_id: 'github-ci'
     ]
@@ -301,8 +301,8 @@ def add_tag(name, message) {
     tag_message: message,
     tag_user_name: 'sensei-jenkins@ci.senseilabs.com',
     tag_user_email: 'sensei-jenkins',
-    github_org: code_github_org,
-    repo_name: code_repo_name,
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME,
     creds_id: 'github-ci'
   ]
   githelper.add_tag(args)
