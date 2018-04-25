@@ -96,7 +96,8 @@ def push_merged_branch() {
 
 
 def files_with_conflicts() {
-  return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
+  return []
+  // return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
 
 def have_conflicts() {
@@ -137,4 +138,3 @@ def report_conflicts() {
     teamDomain: 'senseilabs',
     tokenCredentialId: 'senseilabs-slack-token'
 }
-
