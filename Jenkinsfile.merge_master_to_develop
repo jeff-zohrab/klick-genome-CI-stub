@@ -1,0 +1,76 @@
+// Merge master to develop.
+// If any merge conflicts, report to Slack.
+// If success, push branch.
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import groovy.transform.Field
+
+// Shared libraries, configured in https://ci.senseilabs.com/configure.
+// Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
+@Library('genome') _
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
+
+// Repo:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+
+node('sensei_build') {
+
+  // Slack channel to report to.
+  def slack_channel = 'jenkins-dev-tests'
+
+  genome.create_dir("c:\\www")
+  ws("c:\\www\\genome") {
+
+    try {
+      checkout()
+      fetch_latest('master')
+      merge()
+      if(have_conflicts()) {
+        report_conflicts()
+	currentBuild.result = 'FAILURE'
+      }
+      else {
+        push_merged_branch()
+        currentBuild.result = 'SUCCESS'
+      }
+
+    } // end try
+    catch(FlowInterruptedException interruptEx) {
+      currentBuild.result = 'ABORTED'
+    }
+    catch(err) {
+      echo "Error: ${err}"
+      genome.notify_slack_channel_failure(err, slack_channel)
+      currentBuild.result = 'FAILURE'
+    }
+    finally {
+      cleanWs()
+    }
+
+  } // end ws()
+
+}  // end node
+
+
+///////////////////////////////////////////////////
+// Helpers
+
+
+def checkout() {
+  stage('Checkout') {
+    genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
+    cleanWs()
+    checkout_args = [
+      workspace_dir: env.WORKSPACE,
+      branch_name: 'develop',
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME,
+      ref_repo_parent_dir: 'c:\\reference_repo',
+      creds_id: 'github-ci'
+    ]
+    githelper.checkout_from_reference_repo(checkout_args)
+  }
+}
+
