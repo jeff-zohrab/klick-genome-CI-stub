@@ -123,10 +123,23 @@ def merge() {
     with_upstream_context(args) {
       bat "git branch"
       bat "git branch -r"
+
+      // Delete the current master, which points to the
+      // reference repository, and fetch from upstream.
       bat "git branch -D master"
+
+      // Fetch master and develop from upstream.
+      // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
       bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
       bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
-      bat_no_fail("git merge upstream/master")  // Merge conflicts raise an error.
+      
+      // The current checkout is by sha (to a detached HEAD),
+      // so switch to an actual branch for merging.
+      bat "git checkout upstream/develop -b develop"
+
+      // Merge conflicts raise an error, so ignore them for later processing.
+      bat_no_fail("git merge upstream/master -m \"Merge master into develop.\"")
+
       bat "git status"
     }
     bat "git branch"
@@ -142,8 +155,11 @@ def push_merged_branch() {
 
 
 def files_with_conflicts() {
+  def conflicts = ""
+  conflicts = bat returnStdout: true, script: 'git diff --name-only --diff-filter=U'
+  return conflicts.split("\n")
   // return []
-  return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
+  // return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
 
 def have_conflicts() {
