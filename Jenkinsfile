@@ -309,8 +309,8 @@ def add_tag(name, message) {
   args = [
     tag_name: name,
     tag_message: message,
-    tag_user_name: 'sensei-jenkins@ci.senseilabs.com',
-    tag_user_email: 'sensei-jenkins',
+    tag_user_name: 'Jeff Zohrab',
+    tag_user_email: 'jzohrab@gmail.com',
     github_org: CODE_GITHUB_ORG,
     repo_name: CODE_REPO_NAME,
     creds_id: 'github-ci'
