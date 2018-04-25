@@ -121,8 +121,9 @@ def merge() {
       repo_name: CODE_REPO_NAME
     ]
     with_upstream_context(args) {
-      bat "git branch"
-      bat "git branch -r"
+      // echo "Branches, initial state:"
+      // bat "git branch"
+      // bat "git branch -r"
 
       // Delete the current master, which points to the
       // reference repository, and fetch from upstream.
@@ -140,12 +141,14 @@ def merge() {
       // Merge conflicts raise an error, so ignore them for later processing.
       bat_no_fail("git merge upstream/master -m \"Merge master into develop.\"")
 
-      bat "git status"
-      bat "git branch"
-      bat "git branch -r"
+      // echo "Branches, before leaving context:"
+      // bat "git branch"
+      // bat "git branch -r"
     }
-    bat "git branch"
-    bat "git branch -r"
+
+    // echo "Branches, after leaving context:"
+    // bat "git branch"
+    // bat "git branch -r"
   }
 }
 
