@@ -117,7 +117,7 @@ Please create a new feature off of develop,
 and merge master into it, resolving the conflicts
 as usual.
 
-${env.Job_URL} (number ${currentBuild.number})"
+${env.Job_URL} (number ${currentBuild.number})"""
 
   slackSend channel: "#jenkins-dev-tests",
     color: '#ff0000',
