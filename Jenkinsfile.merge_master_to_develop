@@ -77,20 +77,6 @@ def bat_no_fail(command) {
 }
 
 
-def with_upstream_context(args, commands) {
-  bat_no_fail("git remote remove upstream")
-  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
-    bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
-  } // end with
-  try {
-    commands()
-  }
-  finally {
-    bat_no_fail("git remote remove upstream")
-  }
-}
-
-
 def try_merge() {
   stage('Merge') {
     set_user()
@@ -106,10 +92,29 @@ def try_merge() {
   }
 }
 
-// User required to sign the merge commit.
+// User is required to sign the merge commit.
 def set_user() {
   bat "git config --global user.email \"jzohrab@gmail.com\""  // TODO fix
   bat "git config --global user.name \"Jeff Zohrab\""  // TODO fix
+}
+
+
+// Create a remote reference to the upstream repo,
+// execute the "commands" closure, and remove
+// the reference.
+// This minimizes the exposure of the credentials
+// which are stored with the reference. :-(
+def with_upstream_context(args, commands) {
+  bat_no_fail("git remote remove upstream")
+  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
+    bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
+  } // end with
+  try {
+    commands()
+  }
+  finally {
+    bat_no_fail("git remote remove upstream")
+  }
 }
 
 
@@ -153,12 +158,6 @@ def merge() {
 }
 
 
-
-def push_merged_branch() {
-  echo "todo"
-}
-
-
 def files_with_conflicts() {
   def conflicts = ""
   conflicts = bat returnStdout: true, script: 'git diff --name-only --diff-filter=U'
@@ -168,9 +167,25 @@ def files_with_conflicts() {
     findAll { !it.contains('git diff') }
 }
 
+
 def have_conflicts() {
   return (files_with_conflicts().size() > 0)
 }
+
+
+def push_merged_branch() {
+  stage('Push merged branch') {
+    args = [
+      creds_id: 'github-ci',
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME
+    ]
+    with_upstream_context(args) {
+      bat "git push upstream develop"
+    }
+  }
+}
+
 
 // =============================
 // Report failure
