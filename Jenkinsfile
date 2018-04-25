@@ -54,7 +54,11 @@ node('sensei_build') {
         build_and_unit_test()
       }
       else if (isRelease()) {
-        build_and_unit_test(pipeline_config.get('nunit_filter', ''))
+        def nunit_filter = pipeline_config.get('nunit_filter', '')
+        build_and_unit_test(nunit_filter)
+        if (!pipeline_config_skipped_stage('NUnit') && nunit_filter != '') {
+          tag_UT()
+        }
         ui_testing([
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
@@ -215,6 +219,12 @@ def optional_stage(stage_name, stage_closure) {
   stage(stage_name) {
     stage_closure()
   }
+}
+
+
+// 'true' if the user skipped the stage in the jenkins config file.
+def pipeline_config_skipped_stage(stage_name) {
+  return (SKIP_STAGES.contains(stage_name.toLowerCase()))
 }
 
 
