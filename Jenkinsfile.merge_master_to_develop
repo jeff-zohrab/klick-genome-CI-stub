@@ -128,7 +128,7 @@ def merge() {
       cmd = "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
       echo "Running: ${cmd}"
       bat cmd
-      cmd = "git fetch --depth=1000 --no-tags upstream up_develop:refs/remotes/upstream/develop"
+      cmd = "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
       echo "Running: ${cmd}"
       bat cmd
       bat "git merge upstream/master"
