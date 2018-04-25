@@ -15,10 +15,10 @@ githelper = new org.klick.Git()
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 
-node('sensei_build') {
+// Slack channel to report to.
+slack_channel = '#jenkins-dev-tests'
 
-  // Slack channel to report to.
-  def slack_channel = 'jenkins-dev-tests'
+node('sensei_build') {
 
   genome.create_dir("c:\\www")
   ws("c:\\www\\genome") {
@@ -33,7 +33,7 @@ node('sensei_build') {
     }
     catch(err) {
       echo "Error: ${err}"
-      genome.notify_slack_channel_failure(err, slack_channel)
+      report_failure(err)
       currentBuild.result = 'FAILURE'
     }
     finally {
@@ -75,7 +75,7 @@ def try_merge() {
   stage('Merge') {
     merge()
     if(have_conflicts()) {
-      report_conflicts()
+      report_failure(build_merge_failure_message())
       currentBuild.result = 'FAILURE'
     }
     else {
@@ -107,7 +107,7 @@ def have_conflicts() {
 // =============================
 // Report failure
 
-def build_formatted_failure_message() {
+def build_merge_failure_message() {
   def show_count = 5
   def files = files_with_conflicts()
   def top_files = files.take(show_count)
@@ -130,9 +130,9 @@ as usual.
 ${env.Job_URL} (number ${currentBuild.number})"""
 } // 
 
-def report_conflicts() {
-  def msg = build_formatted_failure_message()
-  slackSend channel: "#jenkins-dev-tests",
+
+def report_failure(msg) {
+  slackSend channel: slack_channel,
     color: '#ff0000',
     message: msg,
     teamDomain: 'senseilabs',
