@@ -94,7 +94,7 @@ def files_with_conflicts() {
 }
 
 def have_conflicts() {
-  return true
+  return (files_with_conflicts().size() > 0)
 }
 
 def report_conflicts() {
