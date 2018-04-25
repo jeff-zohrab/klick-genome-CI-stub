@@ -90,21 +90,21 @@ def merge() {
 }
 
 def files_with_conflicts() {
-  return ['a.txt', 'b.txt', 'c.txt', 'd.txt', 'e.txt', 'f.txt']
+  return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
 
 def have_conflicts() {
-  echo "todo"
   return true
 }
 
 def report_conflicts() {
+  def show_count = 5
   def files = files_with_conflicts()
-  def top_files = files.take(5)
+  def top_files = files.take(show_count)
   report_top_files = top_files.collect { s -> " * ${s}" }
   def addendum = ''
-  if (files.size() > 5) {
-    addendum = "_... and ${files.size() - 5} more_"
+  if (files.size() > show_count) {
+    addendum = "_... and ${files.size() - show_count} more_"
   }
 
   def formatted_message = """*Merge of master into develop failed.*
