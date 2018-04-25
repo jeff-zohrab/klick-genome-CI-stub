@@ -56,7 +56,8 @@ node('sensei_build') {
       else if (isRelease()) {
         def nunit_filter = pipeline_config.get('nunit_filter', '')
         build_and_unit_test(nunit_filter)
-        if (!pipeline_config_skipped_stage('NUnit') && nunit_filter != '') {
+        if (!pipeline_config_skipped_stage('NUnit') && nunit_filter == '') {
+          // Ran all the tests, so add tag.
           tag_UT()
         }
         ui_testing([
