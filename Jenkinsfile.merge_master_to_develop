@@ -159,7 +159,7 @@ def files_with_conflicts() {
   conflicts = bat returnStdout: true, script: 'git diff --name-only --diff-filter=U'
   return conflicts.
     split("\n").
-    collect { it.strip() != '' }
+    collect { it.trim() != '' }
     findAll { !it.contains('git diff') }
   // return []
   // return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
