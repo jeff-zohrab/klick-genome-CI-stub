@@ -83,8 +83,12 @@ def with_upstream_context(args, commands) {
   withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
     bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
   } // end with
-  commands()
-  bat_no_fail("git remote remove upstream")
+  try {
+    commands()
+  }
+  finally {
+    bat_no_fail("git remote remove upstream")
+  }
 }
 
 
@@ -96,8 +100,9 @@ def fetch_latest(branch_name) {
       repo_name: CODE_REPO_NAME
     ]
     with_upstream_context(args) {
-      echo "should have upstream!"
-      bat "git remote -v"
+      def cmd = "git fetch --depth=10 --no-tags upstream ${branch_name}:refs/remotes/origin/${branch_name}"
+      echo "Running: ${cmd}"
+      bat cmd
     }
   }
 }
