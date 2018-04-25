@@ -89,6 +89,12 @@ def merge() {
   echo "todo"
 }
 
+
+def push_merged_branch() {
+  echo "todo"
+}
+
+
 def files_with_conflicts() {
   return ['a.txt', 'b.txt', 'c.txt', 'd.txt'] // , 'e.txt', 'f.txt']
 }
@@ -97,7 +103,10 @@ def have_conflicts() {
   return (files_with_conflicts().size() > 0)
 }
 
-def report_conflicts() {
+// =============================
+// Report failure
+
+def build_formatted_failure_message() {
   def show_count = 5
   def files = files_with_conflicts()
   def top_files = files.take(show_count)
@@ -107,25 +116,25 @@ def report_conflicts() {
     addendum = "_... and ${files.size() - show_count} more_"
   }
 
-  def formatted_message = """*Merge of master into develop failed.*
+  return """*Merge of master into develop failed.*
 
-Conflicts:
-${report_top_files.join('\n')}
-${addendum}
+  Conflicts:
+  ${report_top_files.join('\n')}
+  ${addendum}
 
-Please create a new feature off of develop,
-and merge master into it, resolving the conflicts
-as usual.
+  Please create a new feature off of develop,
+  and merge master into it, resolving the conflicts
+  as usual.
 
-${env.Job_URL} (number ${currentBuild.number})"""
+  ${env.Job_URL} (number ${currentBuild.number})"""
+} // 
 
+def report_conflicts() {
+  def msg = build_formatted_failure_message()
   slackSend channel: "#jenkins-dev-tests",
     color: '#ff0000',
-    message: formatted_message,
+    message: msg,
     teamDomain: 'senseilabs',
     tokenCredentialId: 'senseilabs-slack-token'
 }
 
-def push_merged_branch() {
-  echo "todo"
-}
