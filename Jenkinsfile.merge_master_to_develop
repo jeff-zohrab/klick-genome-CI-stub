@@ -174,7 +174,7 @@ as usual.
 
 
 def report_failure(content) {
-  def failure_msg =   return """*Merge of master into develop failed.*
+  def failure_msg = """*Merge of master into develop failed.*
 
 ${content}
 
