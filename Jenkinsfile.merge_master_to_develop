@@ -207,11 +207,10 @@ ${addendum}
 Please fix the conflicts in a new feature branch, e.g.:
 
 ```
-$ git fetch
-$ git checkout origin/develop -b feature/<date>-resolve-master-conflicts
-$ git merge origin/master  # ... and fix the conflicts
+git fetch
+git checkout origin/develop -b feature/<date>-resolve-master-conflicts
+git merge origin/master  # ... and fix the conflicts
 ```
-
 """
 } // 
 
