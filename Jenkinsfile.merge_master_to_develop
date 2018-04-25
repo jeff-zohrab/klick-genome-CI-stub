@@ -103,8 +103,8 @@ def report_conflicts() {
   def top_files = files.take(5)
   report_top_files = top_files.collect { s -> " * ${s}" }
   def addendum = ''
-  if (files.length > 5) {
-    addendum = "_... and ${files.length - 5} more_"
+  if (files.size() > 5) {
+    addendum = "_... and ${files.size() - 5} more_"
   }
 
   def msg = """*Merge of master into develop failed.*
