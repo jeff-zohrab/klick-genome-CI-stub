@@ -66,14 +66,45 @@ def checkout() {
   }
 }
 
+
+// Some commands may fail, which is annoying but shouldn't be fatal.
+def bat_no_fail(command) {
+  try {
+    bat command
+  }
+  catch(err) {
+    echo "SWALLOW EXCEPTION FOR COMMAND: ${command}"
+  }
+}
+
+
+def with_upstream_context(args, commands) {
+  bat_no_fail("git remote remove upstream")
+  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
+    bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
+  } // end with
+  commands()
+  bat_no_fail("git remote remove upstream")
+}
+
+
 def fetch_latest(branch_name) {
   stage('Fetch master') {
-    echo "todo"
+    args = [
+      creds_id: 'github-ci',
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME
+    ]
+    with_upstream_context(args) {
+      echo "should have upstream!"
+      bat "git remote -v"
+    }
   }
 }
 
 def try_merge() {
   stage('Merge') {
+    set_user()
     merge()
     if(have_conflicts()) {
       report_failure(build_merge_failure_message())
@@ -84,6 +115,12 @@ def try_merge() {
       currentBuild.result = 'SUCCESS'
     }
   }
+}
+
+// User required to sign the merge commit.
+def set_user() {
+  bat "git config --global user.email \"jzohrab@gmail.com\""  // TODO fix
+  bat "git config --global user.name \"Jeff Zohrab\""  // TODO fix
 }
 
 def merge() {
@@ -102,7 +139,7 @@ def files_with_conflicts() {
 }
 
 def have_conflicts() {
-  echo "XXXXXXXXXXXXX checking conflicts:"
+  echo "XXXXXXXXXXXXX checking conflicts:"  // TODO remove
   echo "Files: ${files_with_conflicts()}"
   return (files_with_conflicts().size() > 0)
 }
