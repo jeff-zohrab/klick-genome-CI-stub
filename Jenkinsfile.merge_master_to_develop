@@ -155,8 +155,11 @@ def merge() {
     bat "git checkout upstream/develop -b develop"
 
     // An error is raised if there are merge conflicts.
-    bat "git merge upstream/master --allow-unrelated-histories --no-ff -m \"Merge master into develop.\""
+    // TODO: remove the bat_no_fail, change to bat
+    bat_no_fail "git merge upstream/master --allow-unrelated-histories --no-ff -m \"Merge master into develop.\""
 
+    bat "git status"   // TODO remove this
+    
     // list_branches("before leaving context")
   }
 
