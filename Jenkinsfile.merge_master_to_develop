@@ -26,12 +26,18 @@ node('sensei_build') {
     try {
       checkout()
       try_merge()
+      push_merged_branch()
+      report_success()
+      currentBuild.result = 'SUCCESS'
     }
     catch(FlowInterruptedException interruptEx) {
       currentBuild.result = 'ABORTED'
     }
     catch(err) {
       def msg = "Error: ${err}"
+      if(have_conflicts()) {
+        msg = build_merge_failure_message()
+      }
       echo msg
       report_failure(msg)
       currentBuild.result = 'FAILURE'
@@ -90,14 +96,6 @@ def try_merge() {
   stage('Merge') {
     set_git_user()
     merge()
-    if(have_conflicts()) {
-      report_failure(build_merge_failure_message())
-      currentBuild.result = 'FAILURE'
-    }
-    else {
-      push_merged_branch()
-      currentBuild.result = 'SUCCESS'
-    }
   }
 }
 
@@ -150,8 +148,8 @@ def merge() {
     // so switch to an actual branch for merging.
     bat "git checkout upstream/develop -b develop"
 
-    // Merge conflicts raise an error, so ignore them for later processing.
-    bat_no_fail("git merge upstream/master --no-ff -m \"Merge master into develop.\"")
+    // An error is raised if there are merge conflicts.
+    bat "git merge upstream/master --no-ff -m \"Merge master into develop.\""
 
     // list_branches("before leaving context")
   }
@@ -183,13 +181,15 @@ def have_conflicts() {
 
 
 def push_merged_branch() {
-  args = [
-    creds_id: 'github-ci',
-    github_org: CODE_GITHUB_ORG,
-    repo_name: CODE_REPO_NAME
-  ]
-  with_upstream_context(args) {
-    bat "git push upstream develop"
+  stage('Push') {
+    args = [
+      creds_id: 'github-ci',
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME
+    ]
+    with_upstream_context(args) {
+      bat "git push upstream develop"
+    }
   }
 }
 
