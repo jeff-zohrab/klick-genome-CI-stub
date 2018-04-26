@@ -11,8 +11,8 @@ import groovy.transform.Field
 githelper = new org.klick.Git()
 
 // Config:
-// CODE_GITHUB_ORG = 'KlickInc'
-// CODE_REPO_NAME = 'klick-genome'
+CODE_GITHUB_ORG = 'KlickInc'
+CODE_REPO_NAME = 'klick-genome'
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 
@@ -186,7 +186,7 @@ def do_fetch() {
     bat "git fetch --progress --no-tags --shallow-since=1week upstream +develop:develop +master:master"
 
     // We were on a detached HEAD, but now we'll be using upstream/develop.
-    git checkout develop
+    bat "git checkout develop"
     
     // Validating:
     list_branches("after checkout")
