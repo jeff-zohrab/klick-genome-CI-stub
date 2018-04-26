@@ -164,16 +164,17 @@ def do_fetch() {
     // ref https://git-scm.com/docs/git-fetch
     // bat "git fetch --progress --shallow-since=1week upstream"
 
-    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt for notes on "+develop:develop"
+    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
+    // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
     bat "git fetch --progress --shallow-since=1week upstream +develop:develop +master:master"
 
     // The current checkout is by sha (to a detached HEAD),
     // so switch to an actual branch for merging.
-    bat "git checkout upstream/develop -b develop"
+    // bat "git checkout upstream/develop -b develop"
 
     // Ensure local master branch is the same as upstream.
     // (ref https://stackoverflow.com/questions/5471174/move-branch-pointer-to-different-commit-without-checkout)
-    bat "git branch -f master upstream/master"
+    // bat "git branch -f master upstream/master"
     
     list_branches("after checkout")
     bat "git log -n 1 develop --oneline"
