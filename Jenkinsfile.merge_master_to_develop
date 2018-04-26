@@ -11,10 +11,13 @@ import groovy.transform.Field
 githelper = new org.klick.Git()
 
 // Config:
+CODE_GITHUB_ORG = 'KlickInc'
+CODE_REPO_NAME = 'klick-genome'
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
-MERGER_USERNAME = 'Jeff Zohrab'
-MERGER_EMAIL = 'jzohrab@gmail.com'
+
+MERGER_USERNAME = 'sensei-jenkins'
+MERGER_EMAIL = 'sensei-jenkins@ci.senseilabs.com'
 SLACK_CHANNEL = '#jenkins-dev-tests'
 
 
@@ -25,7 +28,8 @@ node('sensei_build') {
 
     try {
       checkout()
-      try_merge()
+      fetch()
+      merge()
       push_merged_branch()
       report_success()
       currentBuild.result = 'SUCCESS'
@@ -34,11 +38,10 @@ node('sensei_build') {
       currentBuild.result = 'ABORTED'
     }
     catch(err) {
-      def msg = "Error: ${err}"
+      def msg = "Error: ${err.message}"
       if(have_conflicts()) {
         msg = build_merge_failure_message()
       }
-      echo msg
       report_failure(msg)
       currentBuild.result = 'FAILURE'
     }
@@ -92,18 +95,21 @@ def bat_no_fail(command) {
 }
 
 
-def try_merge() {
-  stage('Merge') {
-    set_git_user()
-    merge()
+def fetch() {
+  stage('Fetch') {
+    do_fetch()
   }
 }
 
+def merge() {
+  stage('Merge') {
+    // User is required to sign the merge commit.
+    bat "git config --global user.email \"${MERGER_EMAIL}\""
+    bat "git config --global user.name \"${MERGER_USERNAME}\""
 
-// User is required to sign the merge commit.
-def set_git_user() {
-  bat "git config --global user.email \"${MERGER_EMAIL}\""
-  bat "git config --global user.name \"${MERGER_USERNAME}\""
+    // An error is raised if there are merge conflicts.
+    bat "git merge master --no-ff -m \"Merge master into develop.\""
+  }
 }
 
 
@@ -126,35 +132,70 @@ def with_upstream_context(args, commands) {
 }
 
 
-def merge() {
+// Fetch master and develop from the source repo.
+//
+// We have to fetch the branches or we get an error:
+// "fatal: refusing to merge unrelated histories".
+//
+// Note that using "--allow-unrelated-histories" and fetching to --depth=1 (e.g.)
+// (ref https://stackoverflow.com/questions/37937984/git-refusing-to-merge-unrelated-histories-on-rebase)
+// does NOT WORK in the following situation:
+//    step 1. a file is added to dev
+//    step 2. dev was merged to master
+//    step 3. a few commits are added to both dev and master
+//    step 4. try merge with --allow-unrelated-histories FAILS
+// Reason for the failure: with --depth=1, it looks like both branches have added the new file F,
+// and it will be reported as a conflict ("git status" shows "both added: F")
+//
+// The final command we use to fetch is _by far_ the fastest
+// (e.g., it takes about 10 seconds for the fetch, rather than
+// several minutes), and it yields mergeable branches.
+//
+// Leaving the other comments in here for posterity,
+// and in case anyone thinks of revising the method.
+def do_fetch() {
   args = [
     creds_id: 'github-ci',
     github_org: CODE_GITHUB_ORG,
     repo_name: CODE_REPO_NAME
   ]
   with_upstream_context(args) {
-    // list_branches("initial state")
+    echo "Initial state:"
+    bat "git log -n 1 --oneline"
+    list_branches("initial state")
 
-    // Delete the current master, which points to the
-    // reference repository, and fetch from upstream.
-    bat "git branch -D master"
+    // This works, but takes ~6 mins to fetch to AWS Jenkins slave.
+    // bat "git fetch --progress --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+    // bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
 
-    // Fetch master and develop from upstream.
-    // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
-    bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
-    bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
+    // This fetches branches and tags we don't need, and takes ~7 mins.
+    // "unshallow" the repo. Note the weird, sort-of-undocumented "--shallow-since" param value.
+    // ref https://git-scm.com/docs/git-fetch
+    // bat "git fetch --progress --shallow-since=1week upstream"
 
-    // The current checkout is by sha (to a detached HEAD),
-    // so switch to an actual branch for merging.
-    bat "git checkout upstream/develop -b develop"
+    // Both of the above methods require us to create and update branches as follows:
+    // // The current checkout is by sha (to a detached HEAD), so switch to an actual branch for merging.
+    // bat "git checkout upstream/develop -b develop"
+    // // Ensure local master branch is the same as upstream (ref https://stackoverflow.com/questions/5471174/)
+    // bat "git branch -f master upstream/master"
 
-    // An error is raised if there are merge conflicts.
-    bat "git merge upstream/master --no-ff -m \"Merge master into develop.\""
+    // This _appears_ to work as expected, and --shallow-since also appears to limit scope.
+    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
+    // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
+    bat "git fetch --progress --no-tags --shallow-since=1week upstream +develop:develop +master:master"
 
-    // list_branches("before leaving context")
+    // We were on a detached HEAD, but now we'll be using upstream/develop.
+    bat "git checkout develop"
+    bat "git reset --hard upstream/develop"   // sanity check!
+
+    // Validating:
+    list_branches("after checkout")
+    bat "git log -n 1 --oneline"
+    bat "git log -n 1 develop --oneline"
+    bat "git log -n 1 master --oneline"
   }
 
-  // list_branches("after leaving context")
+  list_branches("after leaving context")
 }
 
 
