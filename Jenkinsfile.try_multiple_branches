@@ -1,0 +1,32 @@
+// Repo:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+
+node('sensei_build') {
+
+  // Slack channel to report to.
+  def slack_channel = ''
+
+  genome.create_dir("c:\\www")
+  ws("c:\\www\\genome") {
+
+    try {
+      echo env.BRANCH_NAME
+      
+      currentBuild.result = 'SUCCESS'
+
+    } // end try
+    catch(FlowInterruptedException interruptEx) {
+      currentBuild.result = 'ABORTED'
+    }
+    catch(err) {
+      echo "Error: ${err}"
+      currentBuild.result = 'FAILURE'
+    }
+    finally {
+      cleanWs()
+    }
+  } // end ws()
+}  // end node
+
+
