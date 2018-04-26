@@ -95,18 +95,21 @@ def bat_no_fail(command) {
 }
 
 
-def try_merge() {
-  stage('Merge') {
-    set_git_user()
-    merge()
+def fetch() {
+  stage('Fetch') {
+    do_fetch()
   }
 }
 
+def try_merge() {
+  stage('Merge') {
+    // User is required to sign the merge commit.
+    bat "git config --global user.email \"${MERGER_EMAIL}\""
+    bat "git config --global user.name \"${MERGER_USERNAME}\""
 
-// User is required to sign the merge commit.
-def set_git_user() {
-  bat "git config --global user.email \"${MERGER_EMAIL}\""
-  bat "git config --global user.name \"${MERGER_USERNAME}\""
+    // An error is raised if there are merge conflicts.
+    bat "git merge master --no-ff -m \"Merge master into develop.\""
+  }
 }
 
 
@@ -129,7 +132,7 @@ def with_upstream_context(args, commands) {
 }
 
 
-def merge() {
+def do_fetch() {
   args = [
     creds_id: 'github-ci',
     github_org: CODE_GITHUB_ORG,
@@ -138,29 +141,33 @@ def merge() {
   with_upstream_context(args) {
     // list_branches("initial state")
 
-    // Delete the current master, which points to the
-    // reference repository, and fetch from upstream.
-    bat "git branch -D master"
-
     // Fetch master and develop from upstream.
     // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
-    // Note this step may not be necessary if we use "--allow-unrelated-histories"
-    // (see https://stackoverflow.com/questions/37937984/git-refusing-to-merge-unrelated-histories-on-rebase),
-    // but it feels safer to just pull in the full tree.
-    bat "git fetch --progress --depth=1 --no-tags upstream master:refs/remotes/upstream/master"
-    bat "git fetch --progress --depth=1 --no-tags upstream develop:refs/remotes/upstream/develop"
+    //
+    // Note that using "--allow-unrelated-histories" and fetching to --depth=1 (e.g.)
+    // (ref https://stackoverflow.com/questions/37937984/git-refusing-to-merge-unrelated-histories-on-rebase)
+    // does NOT WORK in the following situation:
+    //    step 1. a file is added to dev
+    //    step 2. dev was merged to master
+    //    step 3. a few commits are added to both dev and master
+    //    step 4. try merge with --allow-unrelated-histories FAILS
+    // Reason for the failure: with --depth=1, it looks like both branches have added the new file F,
+    // and it will be reported as a conflict ("git status" shows "both added: F")
+    //
+    bat "git fetch --progress --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+    bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
 
     // The current checkout is by sha (to a detached HEAD),
     // so switch to an actual branch for merging.
     bat "git checkout upstream/develop -b develop"
 
-    // An error is raised if there are merge conflicts.
-    // TODO: remove the bat_no_fail, change to bat
-    bat_no_fail "git merge upstream/master --allow-unrelated-histories --no-ff -m \"Merge master into develop.\""
-
-    bat "git status"   // TODO remove this
+    // Ensure local master branch is the same as upstream.
+    // (ref https://stackoverflow.com/questions/5471174/move-branch-pointer-to-different-commit-without-checkout)
+    bat "git branch -f master upstream/master"
     
-    // list_branches("before leaving context")
+    list_branches("after checkout")
+    bat "git log -n 1 develop --oneline"
+    bat "git log -n 1 master --oneline"
   }
 
   // list_branches("after leaving context")
