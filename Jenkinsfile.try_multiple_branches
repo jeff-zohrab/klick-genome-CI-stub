@@ -17,7 +17,11 @@ node('sensei_build') {
       echo "trying some things:"
       echo "${env.GIT_BRANCH}"
       // echo GIT_LOCAL_BRANCH
-      
+
+      env.BRANCH_NAME = 'master'
+      echo "My forcing the environment:"
+      echo "${env.BRANCH_NAME}"
+
       currentBuild.result = 'SUCCESS'
 
     } // end try
