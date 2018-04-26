@@ -141,8 +141,11 @@ def merge() {
 
     // Fetch master and develop from upstream.
     // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
-    bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
-    bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
+    // Note this step may not be necessary if we use "--allow-unrelated-histories"
+    // (see https://stackoverflow.com/questions/37937984/git-refusing-to-merge-unrelated-histories-on-rebase),
+    // but it feels safer to just pull in the full tree.
+    bat "git fetch --progress --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+    bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
 
     // The current checkout is by sha (to a detached HEAD),
     // so switch to an actual branch for merging.
