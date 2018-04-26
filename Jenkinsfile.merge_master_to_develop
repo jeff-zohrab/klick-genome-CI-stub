@@ -13,6 +13,9 @@ githelper = new org.klick.Git()
 // Config:
 CODE_GITHUB_ORG = 'KlickInc'
 CODE_REPO_NAME = 'klick-genome'
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+
 MERGER_USERNAME = 'sensei-jenkins'
 MERGER_EMAIL = 'sensei-jenkins@ci.senseilabs.com'
 SLACK_CHANNEL = '#jenkins-dev-tests'
