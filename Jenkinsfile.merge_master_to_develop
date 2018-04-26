@@ -37,7 +37,7 @@ node('sensei_build') {
       currentBuild.result = 'ABORTED'
     }
     catch(err) {
-      def msg = "Error: ${err}"
+      def msg = "Error: ${err.message}"
       if(have_conflicts()) {
         msg = build_merge_failure_message()
       }
