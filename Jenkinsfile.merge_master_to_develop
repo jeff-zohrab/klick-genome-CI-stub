@@ -235,3 +235,15 @@ ${env.Job_URL} (number ${currentBuild.number})"""
     teamDomain: 'senseilabs',
     tokenCredentialId: 'senseilabs-slack-token'
 }
+
+def report_success() {
+  def msg = """*Merge of master into develop succeeded.* :tada:
+
+${env.Job_URL} (number ${currentBuild.number})"""
+
+  slackSend channel: SLACK_CHANNEL,
+    color: '#008000',
+    message: msg,
+    teamDomain: 'senseilabs',
+    tokenCredentialId: 'senseilabs-slack-token'
+}
