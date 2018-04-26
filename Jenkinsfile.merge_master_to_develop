@@ -28,8 +28,9 @@ node('sensei_build') {
 
     try {
       checkout()
-      try_merge()
-      // push_merged_branch()
+      fetch()
+      merge()
+      // push_merged_branch()  // TODO - remove this
       report_success()
       currentBuild.result = 'SUCCESS'
     }
@@ -101,7 +102,7 @@ def fetch() {
   }
 }
 
-def try_merge() {
+def merge() {
   stage('Merge') {
     // User is required to sign the merge commit.
     bat "git config --global user.email \"${MERGER_EMAIL}\""
