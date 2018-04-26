@@ -187,7 +187,7 @@ def do_fetch() {
 
     // We were on a detached HEAD, but now we'll be using upstream/develop.
     bat "git checkout develop"
-    bat "get reset --hard upstream/develop"   // sanity check!
+    bat "git reset --hard upstream/develop"   // sanity check!
 
     // Validating:
     list_branches("after checkout")
