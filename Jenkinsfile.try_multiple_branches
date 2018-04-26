@@ -4,10 +4,7 @@ CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 
 node('sensei_build') {
 
-  // Slack channel to report to.
-  def slack_channel = ''
-
-  genome.create_dir("c:\\www")
+  create_dir("c:\\www")
   ws("c:\\www\\genome") {
 
     try {
@@ -27,3 +24,11 @@ node('sensei_build') {
 }  // end node
 
 
+def create_dir(dirname) {
+  dir(dirname) {
+    // Ref https://stackoverflow.com/questions/42654875/jenkins-pipeline-create-directory
+    writeFile file: 'placeholder.txt', text: 'Dummy file to create directory.'
+  }
+  // Remove dummy file, leaving directory behind.
+  bat "del ${dirname}\\placeholder.txt"
+}
