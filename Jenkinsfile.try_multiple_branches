@@ -15,8 +15,8 @@ node('sensei_build') {
       echo "${env.getEnvironment()}"
 
       echo "trying some things:"
-      echo GIT_BRANCH
-      echo GIT_LOCAL_BRANCH
+      echo "${env.GIT_BRANCH}"
+      // echo GIT_LOCAL_BRANCH
       
       currentBuild.result = 'SUCCESS'
 
