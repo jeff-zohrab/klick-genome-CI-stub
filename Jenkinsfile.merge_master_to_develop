@@ -162,7 +162,10 @@ def do_fetch() {
     // "unshallow" the repo.  The repo has been cloned from a shallow clone.  We need everything to be able to merge.
     // Note the weird, sort-of-undocumented "--shallow-since" param value.
     // ref https://git-scm.com/docs/git-fetch
-    bat "git fetch --progress --shallow-since=1week upstream"
+    // bat "git fetch --progress --shallow-since=1week upstream"
+
+    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt for notes on "+develop:develop"
+    bat "git fetch --progress --shallow-since=1week upstream +develop:develop +master:master"
 
     // The current checkout is by sha (to a detached HEAD),
     // so switch to an actual branch for merging.
