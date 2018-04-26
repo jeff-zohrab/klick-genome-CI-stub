@@ -79,7 +79,7 @@ def bat_no_fail(command) {
 
 def try_merge() {
   stage('Merge') {
-    set_user()
+    set_git_user()
     merge()
     if(have_conflicts()) {
       report_failure(build_merge_failure_message())
@@ -92,8 +92,9 @@ def try_merge() {
   }
 }
 
+
 // User is required to sign the merge commit.
-def set_user() {
+def set_git_user() {
   bat "git config --global user.email \"jzohrab@gmail.com\""  // TODO fix
   bat "git config --global user.name \"Jeff Zohrab\""  // TODO fix
 }
@@ -119,42 +120,41 @@ def with_upstream_context(args, commands) {
 
 
 def merge() {
-  stage('Merge master') {
-    args = [
-      creds_id: 'github-ci',
-      github_org: CODE_GITHUB_ORG,
-      repo_name: CODE_REPO_NAME
-    ]
-    with_upstream_context(args) {
-      // echo "Branches, initial state:"
-      // bat "git branch"
-      // bat "git branch -r"
+  args = [
+    creds_id: 'github-ci',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME
+  ]
+  with_upstream_context(args) {
+    // list_branches("initial state")
 
-      // Delete the current master, which points to the
-      // reference repository, and fetch from upstream.
-      bat "git branch -D master"
+    // Delete the current master, which points to the
+    // reference repository, and fetch from upstream.
+    bat "git branch -D master"
 
-      // Fetch master and develop from upstream.
-      // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
-      bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
-      bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
-      
-      // The current checkout is by sha (to a detached HEAD),
-      // so switch to an actual branch for merging.
-      bat "git checkout upstream/develop -b develop"
+    // Fetch master and develop from upstream.
+    // Fetch --depth=1000 to avoid error "fatal: refusing to merge unrelated histories".
+    bat "git fetch --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+    bat "git fetch --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
 
-      // Merge conflicts raise an error, so ignore them for later processing.
-      bat_no_fail("git merge upstream/master --no-ff -m \"Merge master into develop.\"")
+    // The current checkout is by sha (to a detached HEAD),
+    // so switch to an actual branch for merging.
+    bat "git checkout upstream/develop -b develop"
 
-      // echo "Branches, before leaving context:"
-      // bat "git branch"
-      // bat "git branch -r"
-    }
+    // Merge conflicts raise an error, so ignore them for later processing.
+    bat_no_fail("git merge upstream/master --no-ff -m \"Merge master into develop.\"")
 
-    // echo "Branches, after leaving context:"
-    // bat "git branch"
-    // bat "git branch -r"
+    // list_branches("before leaving context")
   }
+
+  // list_branches("after leaving context")
+}
+
+
+def list_branches(msg) {
+  echo "List branches (${msg})"
+  bat "git branch"
+  bat "git branch -r"
 }
 
 
@@ -174,15 +174,13 @@ def have_conflicts() {
 
 
 def push_merged_branch() {
-  stage('Push merged branch') {
-    args = [
-      creds_id: 'github-ci',
-      github_org: CODE_GITHUB_ORG,
-      repo_name: CODE_REPO_NAME
-    ]
-    with_upstream_context(args) {
-      bat "git push upstream develop"
-    }
+  args = [
+    creds_id: 'github-ci',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME
+  ]
+  with_upstream_context(args) {
+    bat "git push upstream develop"
   }
 }
 
