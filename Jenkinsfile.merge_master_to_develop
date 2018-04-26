@@ -13,8 +13,8 @@ githelper = new org.klick.Git()
 // Config:
 CODE_GITHUB_ORG = 'KlickInc'
 CODE_REPO_NAME = 'klick-genome'
-CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
-CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+// CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+// CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 
 MERGER_USERNAME = 'sensei-jenkins'
 MERGER_EMAIL = 'sensei-jenkins@ci.senseilabs.com'
@@ -160,6 +160,7 @@ def do_fetch() {
     // bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
 
     // "unshallow" the repo.  The repo has been cloned from a shallow clone.  We need everything to be able to merge.
+    // Note the weird, sort-of-undocumented "--shallow-since" param value.
     // ref https://git-scm.com/docs/git-fetch
     bat "git fetch --progress --shallow-since=1week upstream"
 
