@@ -10,7 +10,10 @@ node('sensei_build') {
     try {
       echo "Branch name:"
       echo env.BRANCH_NAME
-      
+
+      echo "Environment:"
+      echo env.getEnvironment()
+
       currentBuild.result = 'SUCCESS'
 
     } // end try
