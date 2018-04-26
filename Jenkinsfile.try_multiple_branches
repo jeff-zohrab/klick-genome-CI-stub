@@ -8,6 +8,7 @@ node('sensei_build') {
   ws("c:\\www\\genome") {
 
     try {
+      echo "Branch name:"
       echo env.BRANCH_NAME
       
       currentBuild.result = 'SUCCESS'
