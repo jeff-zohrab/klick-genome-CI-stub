@@ -155,8 +155,13 @@ def do_fetch() {
     // Reason for the failure: with --depth=1, it looks like both branches have added the new file F,
     // and it will be reported as a conflict ("git status" shows "both added: F")
     //
-    bat "git fetch --progress --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
-    bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
+    
+    // bat "git fetch --progress --depth=1000 --no-tags upstream master:refs/remotes/upstream/master"
+    // bat "git fetch --progress --depth=1000 --no-tags upstream develop:refs/remotes/upstream/develop"
+
+    // "unshallow" the repo.  The repo has been cloned from a shallow clone.  We need everything to be able to merge.
+    // ref https://git-scm.com/docs/git-fetch
+    bat "git fetch --progress --shallow-since='1 week ago' upstream"
 
     // The current checkout is by sha (to a detached HEAD),
     // so switch to an actual branch for merging.
