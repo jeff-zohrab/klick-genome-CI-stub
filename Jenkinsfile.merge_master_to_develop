@@ -10,12 +10,13 @@ import groovy.transform.Field
 @Library('genome') _
 githelper = new org.klick.Git()
 
-// Repo:
+// Config:
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+MERGER_USERNAME = 'Jeff Zohrab'
+MERGER_EMAIL = 'jzohrab@gmail.com'
+SLACK_CHANNEL = '#jenkins-dev-tests'
 
-// Slack channel to report to.
-slack_channel = '#jenkins-dev-tests'
 
 node('sensei_build') {
 
@@ -103,8 +104,8 @@ def try_merge() {
 
 // User is required to sign the merge commit.
 def set_git_user() {
-  bat "git config --global user.email \"jzohrab@gmail.com\""  // TODO fix
-  bat "git config --global user.name \"Jeff Zohrab\""  // TODO fix
+  bat "git config --global user.email \"${MERGER_EMAIL}\""
+  bat "git config --global user.name \"${MERGER_USERNAME}\""
 }
 
 
@@ -228,7 +229,7 @@ ${content}
 
 ${env.Job_URL} (number ${currentBuild.number})"""
 
-  slackSend channel: slack_channel,
+  slackSend channel: SLACK_CHANNEL,
     color: '#ff0000',
     message: failure_msg,
     teamDomain: 'senseilabs',
