@@ -16,9 +16,6 @@ node('sensei_build') {
       currentBuild.result = 'SUCCESS'
 
     } // end try
-    catch(FlowInterruptedException interruptEx) {
-      currentBuild.result = 'ABORTED'
-    }
     catch(err) {
       echo "Error: ${err}"
       currentBuild.result = 'FAILURE'
