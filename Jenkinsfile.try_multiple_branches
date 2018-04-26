@@ -12,7 +12,7 @@ node('sensei_build') {
       echo env.BRANCH_NAME
 
       echo "Environment:"
-      echo env.getEnvironment()
+      echo "${env.getEnvironment()}"
 
       currentBuild.result = 'SUCCESS'
 
