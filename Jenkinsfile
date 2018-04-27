@@ -10,7 +10,7 @@ import groovy.transform.Field
 genome = new org.klick.Genome()
 githelper = new org.klick.Git()
 
-// Users can skip stages using config files (see Jenkins/README.md).
+// Users can skip stages using config files (see Jenkins/config/README.md).
 // The global variable (!) allows for the optional_stage helper method.
 // ref https://stackoverflow.com/questions/6305910/
 //    how-do-i-create-and-access-the-global-variables-in-groovy
@@ -170,7 +170,7 @@ def get_pipeline_config(branch_name) {
 
 
 def override_config_for_branch(config, branch_name) {
-  filename = 'Jenkins/' + branch_name.replaceAll('/', '_')
+  filename = 'Jenkins/config/' + branch_name.replaceAll('/', '_')
   if (!fileExists(filename))
     return config
 
