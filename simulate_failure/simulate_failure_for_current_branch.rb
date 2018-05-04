@@ -36,6 +36,9 @@ end
 
 set_selenium_success()
 
+default_errors = File.join(File.dirname(__FILE__), "DEFAULT.rb")
+require default_errors
+
 branch_name = get_git_branch_name()
 simulate_errors = File.join(File.dirname(__FILE__), "#{branch_name.gsub('/', '_')}.rb")
 
