@@ -6,4 +6,4 @@
 #   raise 'simulating :runtests failure'
 # end
 
-set_selenium_failure()
+# set_selenium_failure()
