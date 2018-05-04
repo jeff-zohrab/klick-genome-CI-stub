@@ -1,0 +1,187 @@
+// Runs selenium.
+//
+// Parameterized job.  Params:
+// * prmTAG: tag to checkout (should be a UT_ tag)
+// * prmBRANCHES: list of branches that this tag points to
+// Ref https://stackoverflow.com/questions/28572080/
+//       how-to-access-parameters-in-a-parameterized-build/
+
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import java.text.SimpleDateFormat
+import groovy.transform.Field
+
+
+currentBuild.displayName = "#${currentBuild.number} (${params.prmTAG})"
+currentBuild.description = "Branch: ${params.prmBRANCHES}"
+
+
+// Shared libraries, configured in https://ci.senseilabs.com/configure.
+// Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
+@Library('genome') _
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
+
+// Unique db per Jenkins node/executor.
+@Field String DB_NAME = ""
+
+// Repo:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+TAG_USER_NAME = 'Jeff Zohrab',  // TODO - fix this
+TAG_USER_EMAIL = 'jzohrab@gmail.com',  // TODO - fix this
+
+
+node('sensei_build') {
+
+  DB_NAME = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
+
+  // Create directory (the GitHub plugin directory names are unwieldy,
+  // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
+  genome.create_dir("c:\\www")
+  ws("c:\\www\\genome") {
+
+    try {
+      checkout(prmTAG)
+      configure()
+      setup_db()
+      build_back_end()
+      build_front_end()
+
+      def run_description = "${prmTAG} (${prmBRANCHES})"
+      ui_testing(run_description)
+      tag_UI()
+
+      currentBuild.result = 'SUCCESS'
+
+    } // end try
+    catch(FlowInterruptedException interruptEx) {
+      currentBuild.result = 'ABORTED'
+    }
+    catch(err) {
+      echo "Error: ${err}"
+      // TODO: add notification, when tests stabilize.
+      // genome.notify_slack_channel_failure(err, slack_channel)
+      currentBuild.result = 'FAILURE'
+    }
+    finally {
+      // TODO: add notification, when tests stabilize.
+      // genome.notify_slack_channel_if_back_to_normal(currentBuild, slack_channel)
+      genome.stop_iis()
+      cleanWs()
+    }
+  } // end ws()
+}  // end node
+
+
+///////////////////////////////////////////////////
+// Helpers
+
+def checkout(tag_name) {
+  stage('Checkout') {
+    genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
+    cleanWs()
+    checkout_args = [
+      workspace_dir: env.WORKSPACE,
+      branch_name: tag_name,
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME,
+      ref_repo_parent_dir: 'c:\\reference_repo',
+      creds_id: 'github-ci'
+    ]
+    githelper.checkout_from_reference_repo(checkout_args)
+  }
+}
+
+
+def configure() {
+  stage('Config') {
+    genome.create_web_config(DB_NAME)
+    writeFile file: 'site.cfg', text: "jenkins_${env.NODE_NAME}"
+    writeFile file: 'theme.cfg', text: 'genome'
+    bat 'rake jenkins:fix_configs generateManifest'
+    bat 'rake nlog:use_config[NLog.config.Jenkins]'
+    powershell 'Set-Timezone -Name "Eastern Standard Time"'
+  }
+}
+
+
+def setup_db() {
+  timeout(10) { // minutes
+    bat "rake resetdb[\"$DB_NAME\"] migrateschema"
+  }
+}
+
+
+def build_back_end() {
+  stage('Compile back end') {
+    bat 'rake migrateschemacheck base'
+  }
+}
+
+
+def build_front_end() {
+  stage('Compile client') {
+    bat 'rake compileClient'
+  }
+}
+
+
+def tag_UI() {
+  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
+  def date = new Date()
+  def tagname = "UI_" + dateFormat.format(date)
+  args = [
+    tag_name: tagname,
+    tag_message: "UI tests passed.",
+    tag_user_name: TAG_USER_NAME,
+    tag_user_email: TAG_USER_EMAIL,
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME,
+    creds_id: 'github-ci'
+  ]
+  githelper.add_tag(args)
+}
+
+
+def ui_testing(branch_description) {
+  stage('Run Selenium test') {
+    configure_iis_and_start_site()
+    bat 'rake compileqaattributedecorator compileqauitesting'
+    run_selenium(branch_description)
+  }
+}
+
+
+// Jenkins deletes the workspace, which appears to confuse IIS.
+// Setting everything up afresh for the run.
+def configure_iis_and_start_site() {
+  withCredentials([string(credentialsId: 'senseilabs-com-pfx-certificate-password', variable: 'P')]) {
+    withEnv(["ENV_CERT_PASS=${P}"]) {
+      powershell "Scripts\\Jenkins\\IIS\\setup_iis.ps1"
+    }
+  }
+}
+
+
+// Run selenium, and fail the branch if tests fail.
+def run_selenium(branch_description) {
+  try {
+    timeout(120) {  // minutes
+      powershell """QA\\Jenkins\\run_test.ps1 -report_to_testrail true `
+        -branch_name '${branch_description}'"""
+    }
+  }
+  finally {
+    // The Jenkins nunit plugin marks the build
+    // as "failed" if any tests fail.
+    nunit testResultsPattern: 'SeleniumTestResult.xml'
+    publish_selenium_artifacts()
+  }
+}
+
+
+def publish_selenium_artifacts() {
+  def artifact_pattern = 'QA\\UITesting\\SenseiOS.UI.Tests\\bin\\Debug\\Artifacts\\*.*'
+  archiveArtifacts allowEmptyArchive: true, artifacts: artifact_pattern
+}

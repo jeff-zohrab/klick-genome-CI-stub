@@ -1,0 +1,201 @@
+// Job to schedule Selenium runs.
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+
+// Shared libraries, configured in https://ci.senseilabs.com/configure.
+// Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
+@Library('genome') _
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
+
+// Repo:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+
+node('sensei_build') {
+
+  // Create directory (the GitHub plugin directory names are unwieldy,
+  // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
+  genome.create_dir("c:\\www")
+  ws("c:\\www\\genome") {
+
+    try {
+      stage('Checkout') {
+        checkout()
+      }
+      stage('Schedule jobs') {
+        tag_to_branches_map = get_latest_UT_tag_to_branch_map()
+        for (tag in tag_to_branch_map.keySet()) {
+          def branch_list_string = tag_to_branch_map[tag].join(', ')
+          echo "Calling ${tag} for branches ${branch_list_string}"
+          build job: 'Sensei/selenium', parameters: [string(name: 'prmTAG', value: tag), string(name: 'prmBRANCHES', value: branch_list_string)], wait: false
+	}
+      }
+
+      currentBuild.result = 'SUCCESS'
+
+    } // end try
+    catch(FlowInterruptedException interruptEx) {
+      currentBuild.result = 'ABORTED'
+    }
+    catch(err) {
+      echo "Error: ${err}"
+      genome.notify_slack_channel_failure(err, 'jenkins')
+      currentBuild.result = 'FAILURE'
+    }
+    finally {
+      genome.notify_slack_channel_if_back_to_normal(currentBuild, 'jenkins')
+      genome.stop_iis()
+      cleanWs()
+    }
+  } // end ws()
+}  // end node
+
+
+///////////////////////////////////////////////////
+// Helpers
+
+
+def checkout() {
+  genome.stop_iis()  // Must use a shared lib, local repo isn't checked out yet.
+  cleanWs()
+  checkout_args = [
+    workspace_dir: env.WORKSPACE,
+    branch_name: 'develop',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME,
+    ref_repo_parent_dir: 'c:\\reference_repo',
+    creds_id: 'github-ci'
+  ]
+  githelper.checkout_from_reference_repo(checkout_args)
+}
+
+
+// Gets a hash of tags matching UT_, with the list of branches that
+// have that as their latest tag (since multiple branches can point to
+// the same commit).
+// eg:
+// [ 'UT_1234' : ['develop', 'release_123'], 'UT_2345' : ['release_234'] ]
+def get_latest_UT_tag_to_branch_map() {
+  def branches = get_remote_branches()
+  def target_branches = branches.
+    findAll { s -> s == 'develop' || s.startsWith('release') }
+
+  tag_to_branch_map = [:]
+  for (b in target_branches) {
+    fetch_all_tags(b)
+    def t = latest_tag_matching(b, /^UT_\d+/)
+    if (t != null) {
+      branches_with_tag = tag_to_branch_map.get(t, [])
+      branches_with_tag << b
+      tag_to_branch_map[t] = branches_with_tag
+    }
+  }
+
+  // TODO:
+  // if the tagged commit also has a UI tag, don't re-run it
+  // use ("git tag --points-at xxx")
+  return tag_to_branch_map
+}
+
+
+// Some commands may fail, which is annoying but shouldn't be fatal.
+def bat_no_fail(command) {
+  try {
+    bat command
+  }
+  catch(err) {
+    echo "SWALLOW EXCEPTION FOR COMMAND: ${command}"
+  }
+}
+
+
+// Create a remote reference to the upstream repo,
+// execute the "commands" closure, and remove
+// the reference.
+// This minimizes the exposure of the credentials
+// which are stored with the reference. :-(
+def with_upstream_context(args, commands) {
+  bat_no_fail("git remote remove upstream")
+  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
+    bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
+  } // end with
+  try {
+    commands()
+  }
+  finally {
+    bat_no_fail("git remote remove upstream")
+  }
+}
+
+
+// Fetch all tags the source repo.
+def fetch_all_tags(current_branch) {
+  args = [
+    creds_id: 'github-ci',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME
+  ]
+  with_upstream_context(args) {
+    // This _appears_ to work as expected, and --shallow-since also appears to limit scope.
+    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
+    // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
+    bat "git fetch --progress --shallow-since=3weeks upstream +${current_branch}:${current_branch}"
+  }
+}
+
+
+// Gets a list of all branches in the remote
+// without fetching.  The source repo is large,
+// so a full fetch is painful.
+// Returns array of strings.
+def get_remote_branches() {
+  def raw_data = ''
+  args = [
+    creds_id: 'github-ci',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME
+  ]
+  with_upstream_context(args) {
+    raw_data = bat(returnStdout: true, script: "git ls-remote --heads upstream")
+  }
+
+  echo "Parsing branches"
+  branch_regex = /.*?refs\/heads\//
+  def ret = raw_data.
+    split("\n").
+    collect { it.trim() }.
+    findAll { s -> s =~ branch_regex }.
+    collect { it.replaceAll(branch_regex, '') }
+  return ret
+}
+
+
+// Returns the latest tag matching the regex.
+def latest_tag_matching(current_branch, tag_regex) {
+
+  // "--merged" only includes tags reachable from the specified branch.
+  // ref https://stackoverflow.com/questions/2381665/list-tags-contained-by-a-branch
+  def all_tags = bat(returnStdout: true, script: "git tag --merged ${current_branch}")
+  // echo all_tags
+
+  candidates = all_tags.
+    split("\n").
+    collect { s -> s.trim() }.
+    findAll { s -> s =~ tag_regex }.
+    sort().
+    reverse()
+  
+  // echo "Candidates: ${candidates}"
+  // echo "Latest: ${candidates[0]}"
+
+  if (candidates.size() == 0) {
+    echo "No tag matching ${tag_regex} found in ${current_branch}"
+    return null
+  }
+  else {
+    def t = candidates[0]
+    echo "Tag ${t} found in ${current_branch}"
+    return t
+  }
+}
