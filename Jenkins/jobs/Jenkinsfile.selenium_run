@@ -28,8 +28,8 @@ githelper = new org.klick.Git()
 // Repo:
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
-TAG_USER_NAME = 'Jeff Zohrab',  // TODO - fix this
-TAG_USER_EMAIL = 'jzohrab@gmail.com',  // TODO - fix this
+TAG_USER_NAME = 'Jeff Zohrab'  // TODO - fix this
+TAG_USER_EMAIL = 'jzohrab@gmail.com'  // TODO - fix this
 
 
 node('sensei_build') {
