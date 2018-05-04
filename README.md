@@ -16,6 +16,15 @@ To create the stub:
 
 ## Simulating failure
 
+`simulate_failure/simulate_failure_for_current_branch.rb` is included
+in the `Rakefile` to simulate errors.  You can simulate errors for
+branches:
+
+The `DEFAULT.rb` in `simulate_failure/` is shared by all branches, and
+is executed first.  If you edit this in several branches, you may get
+merge conflicts.  Use per-branch simulations where possible.
+
 In `simulate_failure/`, create `{branch_name}.rb`, where
 `{branch_name}` is the current branch name.  See `demonstration.rb`
 for an example.
+
