@@ -24,6 +24,7 @@ node('sensei_build') {
         checkout()
       }
       stage('Schedule jobs') {
+        add_upstream_remote()
         tag_to_branches_map = get_latest_UT_tag_to_branch_map()
         echo "Will schedule the following: ${tag_to_branches_map}"
         for (tag in tag_to_branch_map.keySet()) {
@@ -102,47 +103,23 @@ def get_latest_UT_tag_to_branch_map() {
 
 // Some commands may fail, which is annoying but shouldn't be fatal.
 def bat_no_fail(command) {
-  try {
-    bat command
-  }
-  catch(err) {
-    echo "SWALLOW EXCEPTION FOR COMMAND: ${command}"
-  }
+  try { bat command } catch(err) { }
 }
 
 
-// Create a remote reference to the upstream repo,
-// execute the "commands" closure, and remove
-// the reference.
-// This minimizes the exposure of the credentials
-// which are stored with the reference. :-(
-def with_upstream_context(args, commands) {
+def add_upstream_remote() {
   bat_no_fail("git remote remove upstream")
-  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
-    bat "git remote add upstream https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
+  withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
+    bat "git remote add upstream https://${U}:${P}@github.com/${CODE_GITHUB_ORG}/${CODE_REPO_NAME}.git"
   } // end with
-  try {
-    commands()
-  }
-  finally {
-    bat_no_fail("git remote remove upstream")
-  }
 }
 
 
-// Fetch all tags the source repo.
 def fetch_all_tags(current_branch) {
-  args = [
-    creds_id: 'github-ci',
-    github_org: CODE_GITHUB_ORG,
-    repo_name: CODE_REPO_NAME
-  ]
-  with_upstream_context(args) {
-    // This _appears_ to work as expected, and --shallow-since also appears to limit scope.
-    // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
-    // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
-    bat "git fetch --progress --shallow-since=3weeks upstream +${current_branch}:${current_branch}"
-  }
+  // This _appears_ to work as expected, and --shallow-since also appears to limit scope.
+  // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
+  // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
+  bat "git fetch --progress --shallow-since=3weeks upstream +${current_branch}:${current_branch}"
 }
 
 
@@ -152,14 +129,7 @@ def fetch_all_tags(current_branch) {
 // Returns array of strings.
 def get_remote_branches() {
   def raw_data = ''
-  args = [
-    creds_id: 'github-ci',
-    github_org: CODE_GITHUB_ORG,
-    repo_name: CODE_REPO_NAME
-  ]
-  with_upstream_context(args) {
-    raw_data = bat(returnStdout: true, script: "git ls-remote --heads upstream")
-  }
+  raw_data = bat(returnStdout: true, script: "git ls-remote --heads upstream")
 
   echo "Parsing branches"
   branch_regex = /.*?refs\/heads\//
