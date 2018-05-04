@@ -171,7 +171,7 @@ def latest_tag_matching(current_branch, tag_regex) {
 
 def commit_already_has_UI_tag(t, tag_regex) {
   def all_tags_on_current = bat(returnStdout: true, script: "git tag --points-at ${t}")
-  ui_tags = all_tags.
+  def ui_tags = all_tags_on_current.
     split("\n").
     collect { s -> s.trim() }.
     findAll { s -> s =~ tag_regex }
