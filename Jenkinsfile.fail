@@ -1,0 +1,6 @@
+// simulate failure
+
+node('localhost') {  // TODO - fix this
+  stage('fail') { error 'simulate error' }
+}
+  
