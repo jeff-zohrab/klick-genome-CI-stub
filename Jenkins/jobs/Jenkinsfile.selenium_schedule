@@ -46,7 +46,9 @@ node('sensei_build') {
       currentBuild.result = 'FAILURE'
     }
     finally {
-      genome.notify_slack_channel_if_back_to_normal(currentBuild, 'jenkins')
+      // TODO: fix this slack library, it references env. variables and so
+      // is not useful in a non-multibranch pipeline setting.
+      // genome.notify_slack_channel_if_back_to_normal(currentBuild, 'jenkins')
       genome.stop_iis()
       cleanWs()
     }
