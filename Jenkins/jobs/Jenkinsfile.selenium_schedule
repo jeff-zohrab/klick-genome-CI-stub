@@ -25,6 +25,7 @@ node('sensei_build') {
       }
       stage('Schedule jobs') {
         tag_to_branches_map = get_latest_UT_tag_to_branch_map()
+        echo "Will schedule the following: ${tag_to_branches_map}"
         for (tag in tag_to_branch_map.keySet()) {
           def branch_list_string = tag_to_branch_map[tag].join(', ')
           echo "Calling ${tag} for branches ${branch_list_string}"
