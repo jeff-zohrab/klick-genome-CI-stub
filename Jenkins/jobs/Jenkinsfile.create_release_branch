@@ -140,9 +140,8 @@ def latest_tag_matching(current_branch, tag_regex) {
 
 
 def post_success_message(branch_name, tag_name, slack_channel) {
-  def msg = """*Launch branch created*
-Branch: ${branch_name}
-Created from: ${tag_name}
+  def msg = """*Release branch ${branch_name} created*
+Created from tag ${tag_name}
 
 ${env.Job_URL} (number ${currentBuild.number})"""
   send_slack_message(slack_channel, '#008000', msg)
