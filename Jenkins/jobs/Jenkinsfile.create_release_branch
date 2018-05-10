@@ -151,11 +151,11 @@ ${env.Job_URL} (number ${currentBuild.number})"""
 }
 
 def post_failure_message(err, slack_channel) {
-   def msg = """*Launch branch creation failed:
+   def msg = """*Launch branch creation failed*
 
  ${err}
 
- ${env.Job_URL} (number ${currentBuild.number})"""
+ Error log: ${env.Job_URL}/${currentBuild.number}/consoleFull"""
   send_slack_message(slack_channel, '#ff0000', msg)
 }
 
