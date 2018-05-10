@@ -32,7 +32,7 @@ node('sensei_build') {
         echo "Creating release branch from ${tag}"
         bat "git checkout ${tag} -b ${branch_name}"
         bat "git push upstream ${branch_name}"
-        post_success_message(branch_name, SLACK_CHANNEL)
+        post_success_message(branch_name, tag, SLACK_CHANNEL)
       }
 
       currentBuild.result = 'SUCCESS'
