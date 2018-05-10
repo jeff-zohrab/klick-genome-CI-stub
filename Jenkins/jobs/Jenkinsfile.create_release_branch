@@ -31,7 +31,7 @@ node('sensei_build') {
         branch_name = create_release_branch_name()
         echo "Creating release branch from ${tag}"
         bat "git checkout ${tag} -b ${branch_name}"
-        bat "git push upstream ${branch_name}"
+        bat "git push upstreamxxx ${branch_name}"
         post_success_message(branch_name, tag, SLACK_CHANNEL)
       }
 
