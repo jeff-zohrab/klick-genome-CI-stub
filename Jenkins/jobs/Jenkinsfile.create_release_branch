@@ -155,7 +155,7 @@ def post_failure_message(err, slack_channel) {
 
  ${err}
 
- Error log: ${env.Job_URL}/${currentBuild.number}/consoleFull"""
+ Error log: ${env.Job_URL}${currentBuild.number}/consoleFull"""
   send_slack_message(slack_channel, '#ff0000', msg)
 }
 
