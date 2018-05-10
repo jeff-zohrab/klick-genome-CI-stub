@@ -150,7 +150,7 @@ ${env.Job_URL} (number ${currentBuild.number})"""
   send_slack_message(slack_channel, '#008000', msg)
 }
 
-def notify_slack_channel_failure(err, slack_channel) {
+def post_failure_message(err, slack_channel) {
    def msg = """*Launch branch creation failed:
 
  ${err}
