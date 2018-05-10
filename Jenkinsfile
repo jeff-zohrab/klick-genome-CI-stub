@@ -197,9 +197,9 @@ def override_config_for_branch(config, branch_name) {
 
 
 def get_slack_channel(pipeline_config) {
-  def ret = 'jenkins'
+  def ret = 'jenkins-dev-tests'
   if (isDevelop() || isMaster() || isRelease())
-    ret = 'jenkins'
+    ret = 'jenkins-dev-tests'
   else
     ret = pipeline_config.get('slack_channel', '')
   echo "Using slack channel: ${ret}"
