@@ -43,7 +43,6 @@ node('sensei_build') {
       SKIP_STAGES = pipeline_config['skip']
       slack_channel = get_slack_channel(pipeline_config)
 
-      lock_schema_migrations_if_on_develop_branch()
       setup_db()
 
       if (isDevelop()) {
@@ -238,28 +237,6 @@ def setup_db() {
 def reset_and_migrate_db() {
   timeout(10) { // minutes
     bat "rake resetdb[\"$DB_NAME\"] migrateschema"
-  }
-}
-
-
-// Lock migrations until old schema migrations are phased out
-// (see https://senseilabs.atlassian.net/browse/DEVOPS-50)
-def lock_schema_migrations_if_on_develop_branch() {
-  if (!isDevelop()) {
-    echo "Skipping schema locking for non-develop branch."
-    return
-  }
-
-  stage('Lock schema migrations') {
-    withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
-      withEnv(["ENV_USER=${U}", "ENV_PASS=${P}"]) {
-        powershell "Scripts\\Jenkins\\develop_cleanup\\lock_schema_migrations.ps1 -branch ${env.BRANCH_NAME}"
-        // Suppressing config file cleanup for now.
-        // Config file cleanup happens frequently, but that creates a new commit, which kicks off another Jenkins run,
-        // sapping pipeline resources.
-        // powershell "Scripts\\Jenkins\\develop_cleanup\\remove_old_jenkins_config_files.ps1 -branch ${env.BRANCH_NAME}"
-      }
-    }
   }
 }
 
