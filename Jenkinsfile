@@ -336,8 +336,15 @@ def tag_UT() {
 }
 
 
-def tag_UI() {
-  add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
+// Tag if tagging is required, and if all the tests were run.
+def tag_UI(tag_on_success, selenium_filter) {
+  def ran_all_tests = (selenium_filter == '')
+  if (!tag_on_success || !ran_all_tests) {
+    echo "Not adding UI_ tag (tag_on_success=${tag_on_success}, ran_all_tests=${ran_all_tests})"
+  }
+  else {
+    add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
+  }
 }
 
 
@@ -359,10 +366,7 @@ def ui_testing(args_map) {
           -report_to_testrail ${args_map.report_to_testrail} `
           -branch_name ${env.BRANCH_NAME}"""
       }
-      def ran_all_tests = (args_map.selenium_filter == '')
-      if (args_map.get('tag_on_success', false) && ran_all_tests) {
-        tag_UI()
-      }
+      tag_UI(args_map.get('tag_on_success', false), args_map.selenium_filter)
     }
     catch(err) {
       handle_error(err, args_map.fail_on_error)
