@@ -40,7 +40,7 @@ node('sensei_build') {
 
     try {
       checkout()
-      configure()
+      // configure()  // TODO RESTORE THIS
 
       def pipeline_config = get_pipeline_config(env.BRANCH_NAME)
       SKIP_STAGES = pipeline_config['skip']
@@ -49,7 +49,7 @@ node('sensei_build') {
       setup_db()
 
 ///////////////////////
-// SCRAP
+// TODO _ REMOVE _ SCRAP
 
 stage('try tag check') {
   bat 'git remote -v'
