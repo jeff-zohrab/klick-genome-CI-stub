@@ -66,11 +66,12 @@ stage('try tag check') {
   withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
     def s = "git fetch https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
     bat s
+    bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
   } // end withCredentials
 
   // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
   // bat 'git log --decorate=full --all -n 4'
-  bat 'git log --decorate=full --all'
+  // bat 'git log --decorate=full --all'
 }
 
 ///////////////////////
