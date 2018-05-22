@@ -73,7 +73,7 @@ stage('try tag check') {
     bat 'git log --decorate=full --all'
     echo '=========================================='
 
-    bat 'git log --decorate=full adc0eac01c08ba6d91'
+    bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
 
   } // end withCredentials
 
