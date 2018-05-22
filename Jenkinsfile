@@ -52,7 +52,7 @@ node('sensei_build') {
 // SCRAP
 
 stage('try tag check') {
-  bat 'git remove -v'
+  bat 'git remote -v'
   bat 'git fetch origin'
   bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
 }
