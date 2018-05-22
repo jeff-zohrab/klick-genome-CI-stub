@@ -26,7 +26,6 @@ node('sensei_build') {
       stage('Schedule jobs') {
         add_upstream_remote()
         tag_to_branches_map = get_latest_UT_tag_to_branch_map()
-        echo "Will schedule the following: ${tag_to_branches_map}"
         for (tag in tag_to_branch_map.keySet()) {
           def branch_list_string = tag_to_branch_map[tag].join(', ')
           echo "Calling ${tag} for branches ${branch_list_string}"
@@ -85,6 +84,7 @@ def get_latest_UT_tag_to_branch_map() {
   def target_branches = branches.
     findAll { s -> s == 'develop' || s.startsWith('release') }
 
+  discards = []
   tag_to_branch_map = [:]
   for (b in target_branches) {
     fetch_all_tags(b)
@@ -95,10 +95,13 @@ def get_latest_UT_tag_to_branch_map() {
       tag_to_branch_map[t] = branches_with_tag
     }
     else {
-      echo "Branch ${b} doesn't have a UT_ tag, or latest tag ${t}'s commit already has a UI_ tag"
+      discards << "${b} doesn't have UT_ tag, or latest tag ${t}'s commit already has a UI_ tag"
     }
   }
 
+  echo "Considered: ${target_branches}"
+  echo "Discarded: ${discards}"
+  echo "Will schedule the following tags: ${tag_to_branch_map}"
   return tag_to_branch_map
 }
 
