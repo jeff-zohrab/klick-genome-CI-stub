@@ -70,8 +70,12 @@ stage('try tag check') {
   } // end withCredentials
 
   bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
+
+  def has_tag = githelper.commit_has_tag_matching_regex('adc0eac01c08ba6d91', /UI_\d+/)
+  echo "Commit adc0eac01c08ba6d91 has tag? ${has_tag}"
+
   echo '=========================================='
-  raise 'EXIT'
+  error 'exit'
 }
 
 ///////////////////////
