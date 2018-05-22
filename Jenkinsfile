@@ -266,10 +266,19 @@ def build_back_end() {
 }
 
 
+def HEAD_has_tag(tag_regex, message) {
+  if (githelper.commit_has_tag_matching_regex('HEAD', tag_regex)) {
+    echo "${message} (current commit already has tag matching ${tag_regex})."
+    return true
+  }
+
+  return false
+}
+
+
 def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
-    if (githelper.commit_has_tag_matching_regex('HEAD', /UT_\d+/)) {
-      echo "Current commit already has 'UT' tag, skipping NUnit."
+    if (HEAD_has_tag(/UT_\d+/, 'Skip NUnit')) {
       return
     }
     try {
@@ -291,6 +300,9 @@ def build_front_end() {
 
 def test_front_end() {
   optional_stage('Npm test') {
+    if (HEAD_has_tag(/UT_\d+/, 'Skip Npm test')) {
+      return
+    }
     bat 'npm test -- --single-run'
   }
 }
@@ -311,8 +323,7 @@ def add_tag(name, message) {
 
 
 def tag_UT() {
-  if (githelper.commit_has_tag_matching_regex('HEAD', /UT_\d+/)) {
-    echo "Current commit already has 'UT' tag, skipping tagging UT."
+  if (HEAD_has_tag(/UT_\d+/, 'Don't re-tag with UT')) {
     return
   }
   def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
@@ -325,8 +336,7 @@ def tag_UT() {
 def ui_testing(args_map) {
   echo "Got args: ${args_map}"
   stage('Run Selenium test') {
-    if (githelper.commit_has_tag_matching_regex('HEAD', /UI_\d+/)) {
-      echo "Current commit already has 'UI' tag, skipping Selenium test."
+    if (HEAD_has_tag(/UI_\d+/, 'Skip Selenium test')) {
       return
     }
 
