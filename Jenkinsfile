@@ -319,7 +319,7 @@ def add_tag_if_missing(tag_regex, tag_start, message) {
   def tagname = tag_start + dateFormat.format(date)
 
   args = [
-    tag_name: name,
+    tag_name: tagname,
     tag_message: message,
     tag_user_name: TAG_USER_NAME,
     tag_user_email: TAG_USER_EMAIL,
