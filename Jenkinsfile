@@ -53,7 +53,21 @@ node('sensei_build') {
 
 stage('try tag check') {
   bat 'git remote -v'
-  bat 'git fetch origin'
+
+  // HACK STEALING
+  args = [
+      workspace_dir: env.WORKSPACE,
+      branch_name: env.BRANCH_NAME,
+      github_org: CODE_GITHUB_ORG,
+      repo_name: CODE_REPO_NAME,
+      ref_repo_parent_dir: 'c:\\reference_repo',
+      creds_id: 'github-ci'
+  ]
+  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
+    def s = "git fetch https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
+    bat s
+  } // end withCredentials
+
   bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
 }
 
