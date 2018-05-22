@@ -268,6 +268,10 @@ def build_back_end() {
 
 def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
+    if (githelper.commit_has_tag_matching_regex('HEAD', /UT_\d+/)) {
+      echo "Current commit already has 'UT' tag, skipping NUnit."
+      return
+    }
     try {
       bat "rake runtests[\"$nunit_filter\"]"
     }
@@ -307,6 +311,10 @@ def add_tag(name, message) {
 
 
 def tag_UT() {
+  if (githelper.commit_has_tag_matching_regex('HEAD', /UT_\d+/)) {
+    echo "Current commit already has 'UT' tag, skipping tagging UT."
+    return
+  }
   def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
   def date = new Date()
   def tagname = "UT_" + dateFormat.format(date)
@@ -317,6 +325,11 @@ def tag_UT() {
 def ui_testing(args_map) {
   echo "Got args: ${args_map}"
   stage('Run Selenium test') {
+    if (githelper.commit_has_tag_matching_regex('HEAD', /UI_\d+/)) {
+      echo "Current commit already has 'UI' tag, skipping Selenium test."
+      return
+    }
+
     configure_iis_and_start_site()
     bat 'rake compileqaattributedecorator compileqauitesting'
     reset_and_migrate_db()  // Required, as earlier stages may destroy data.
