@@ -69,14 +69,19 @@ stage('try tag check') {
     // def s = "git fetch https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
     // bat s
     // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
+    echo '=========================================='
     bat 'git log --decorate=full --all'
+    echo '=========================================='
+
+    bat 'git log --decorate=full adc0eac01c08ba6d91'
+
   } // end withCredentials
 
   echo '=========================================='
   // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
   // bat 'git log --decorate=full --all -n 4'
   // bat 'git log --decorate=full --all'
-  exit 0
+  raise 'EXIT'
 }
 
 ///////////////////////
