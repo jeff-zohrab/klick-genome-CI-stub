@@ -74,6 +74,14 @@ stage('try tag check') {
   def has_tag = githelper.commit_has_tag_matching_regex('adc0eac01c08ba6d91', /UI_\d+/)
   echo "Commit adc0eac01c08ba6d91 has tag? ${has_tag}"
 
+  // c224bd634bbc720acf83ed68bd6ea1a3cb4ae126
+  // UT_20180510_170449
+
+  // a95f6c2d2dba7ada4578b59fcb1d5f9c9ab7ed97
+  // UT_20180504_154037
+  // UT_20180504_133100
+  // UI_20180504_133243
+  
   echo '=========================================='
   error 'exit'
 }
