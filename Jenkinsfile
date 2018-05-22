@@ -323,7 +323,7 @@ def add_tag(name, message) {
 
 
 def tag_UT() {
-  if (HEAD_has_tag(/UT_\d+/, 'Don't re-tag with UT')) {
+  if (HEAD_has_tag(/UT_\d+/, "Don't re-tag with UT")) {
     return
   }
   def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
