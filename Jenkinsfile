@@ -268,6 +268,10 @@ def build_back_end() {
 
 def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
+    if (githelper.commit_has_tag_matching_regex('HEAD', /UT_\d+/)) {
+      echo "Current commit already has 'UT' tag, skipping."
+      return
+    }
     try {
       bat "rake runtests[\"$nunit_filter\"]"
     }
