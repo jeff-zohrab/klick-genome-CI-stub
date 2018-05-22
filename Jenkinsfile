@@ -64,7 +64,8 @@ node('sensei_build') {
         ui_testing([
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
-          fail_on_error: false
+          fail_on_error: false,
+          tag_on_success: true
         ])
       }
       else if (isQaauto()) {
@@ -308,9 +309,17 @@ def test_front_end() {
 }
 
 
-def add_tag(name, message) {
+def add_tag_if_missing(tag_regex, tag_start, message) {
+  if (HEAD_has_tag(tag_regex, "Don't re-tag with ${tag_start}")) {
+    return
+  }
+
+  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
+  def date = new Date()
+  def tagname = tag_start + dateFormat.format(date)
+
   args = [
-    tag_name: name,
+    tag_name: tagname,
     tag_message: message,
     tag_user_name: TAG_USER_NAME,
     tag_user_email: TAG_USER_EMAIL,
@@ -323,13 +332,19 @@ def add_tag(name, message) {
 
 
 def tag_UT() {
-  if (HEAD_has_tag(/UT_\d+/, "Don't re-tag with UT")) {
-    return
+  add_tag_if_missing(/UT_\d+/, "UT_", "Unit tests passed.")
+}
+
+
+// Tag if tagging is required, and if all the tests were run.
+def tag_UI(tag_on_success, selenium_filter) {
+  def ran_all_tests = (selenium_filter == '')
+  if (!tag_on_success || !ran_all_tests) {
+    echo "Not adding UI_ tag (tag_on_success=${tag_on_success}, ran_all_tests=${ran_all_tests})"
   }
-  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
-  def date = new Date()
-  def tagname = "UT_" + dateFormat.format(date)
-  add_tag(tagname, "Unit tests passed.")
+  else {
+    add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
+  }
 }
 
 
@@ -343,17 +358,21 @@ def ui_testing(args_map) {
     configure_iis_and_start_site()
     bat 'rake compileqaattributedecorator compileqauitesting'
     reset_and_migrate_db()  // Required, as earlier stages may destroy data.
-    selenium_args = [
-      branch_name: env.BRANCH_NAME,
-      selenium_filter: args_map.selenium_filter,
-      report_to_testrail: args_map.report_to_testrail
-    ]
 
-    if (args_map.fail_on_error) {
-      run_selenium(selenium_args)
+    try {
+      timeout(180) {  // minutes
+        powershell """QA\\Jenkins\\run_test.ps1 `
+          -nunit_filter \"${args_map.selenium_filter}\" `
+          -report_to_testrail ${args_map.report_to_testrail} `
+          -branch_name ${env.BRANCH_NAME}"""
+      }
+      tag_UI(args_map.get('tag_on_success', false), args_map.selenium_filter)
     }
-    else {
-      run_selenium_no_fail(selenium_args)
+    catch(err) {
+      handle_error(err, args_map.fail_on_error)
+    }
+    finally {
+      publish_selenium_artifacts(args_map.fail_on_error)
     }
   }
 }
@@ -370,60 +389,23 @@ def configure_iis_and_start_site() {
 }
 
 
-// Run selenium, and fail the branch if tests fail.
-// selenium_args: a map with the following values:
-//   * selenium_filter: string
-//   * report_to_testrail: true/false
-//   * branch_name: branch
-def run_selenium(selenium_args) {
-  try {
-    run_selenium_script(selenium_args)
+// In some cases (e.g.release branches), we don't fail the build
+// if tests fail, as some tests are flaky.
+def handle_error(err, fail_on_error) {
+  if (fail_on_error) {
+    throw err
   }
-  finally {
-    // The Jenkins nunit plugin marks the build
-    // as "failed" if any tests fail.
-    nunit testResultsPattern: 'SeleniumTestResult.xml'
-    publish_selenium_artifacts()
-  }
+  echo "Some tests failed, but we're ignoring them."
 }
 
 
-// Run selenium tests, but don't fail the branch even if tests fail.
-// This method is separate from the run_selenium() method as it has
-// completely different behaviour.
-// selenium_args: a map with the following values:
-//   * selenium_filter: string
-//   * report_to_testrail: true/false
-//   * branch_name: branch
-def run_selenium_no_fail(selenium_args) {
-  try {
-    run_selenium_script(selenium_args)
-  }
-  catch(err) {
-    // We're not failing the build if Selenium fails.
-    // In some cases (e.g.release branches), we don't want to fail the build
-    // if tests fail, as some tests are flaky.
-    // Since the nunit plugin fails the whole build if
-    // it sees test errors, don't use it.
-    echo "Some tests failed, but we're ignoring them."
-  }
-  finally {
-    publish_selenium_artifacts()
-  }
-}
-
-
-def run_selenium_script(selenium_args) {
-  timeout(180) {  // minutes
-    powershell """QA\\Jenkins\\run_test.ps1 `
-      -nunit_filter \"${selenium_args.selenium_filter}\" `
-      -report_to_testrail ${selenium_args.report_to_testrail} `
-      -branch_name ${selenium_args.branch_name}"""
-  }
-}
-
-
-def publish_selenium_artifacts() {
+def publish_selenium_artifacts(fail_on_error) {
   def artifact_pattern = 'QA\\UITesting\\SenseiOS.UI.Tests\\bin\\Debug\\Artifacts\\*.*'
   archiveArtifacts allowEmptyArchive: true, artifacts: artifact_pattern
+
+  // The nunit plugin fails the whole build if
+  // it sees test errors, so only use it if failing the build.
+  if (fail_on_error) {
+    nunit testResultsPattern: 'SeleniumTestResult.xml'
+  }
 }
