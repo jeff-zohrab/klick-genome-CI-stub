@@ -89,7 +89,7 @@ def get_latest_UT_tag_to_branch_map() {
   for (b in target_branches) {
     fetch_all_tags(b)
     def t = latest_tag_matching(b, /^UT_\d+/)
-    if (t != null && !commit_already_has_UI_tag(t, /^UI_\d+/)) {
+    if (t != null && !githelper.commit_has_tag_matching_regex(t, /^UI_\d+/)) {
       branches_with_tag = tag_to_branch_map.get(t, [])
       branches_with_tag << b
       tag_to_branch_map[t] = branches_with_tag
@@ -170,20 +170,3 @@ def latest_tag_matching(current_branch, tag_regex) {
   }
 }
 
-
-def commit_already_has_UI_tag(t, tag_regex) {
-  echo "Checking if commit already has UI tag"
-  def all_tags_on_current = bat(returnStdout: true, script: "git tag --points-at ${t}")
-  echo "Got tags: ${all_tags_on_current}"
-  def ui_tags = all_tags_on_current.
-    split("\n").
-    collect { s -> s.trim() }.
-    findAll { s -> s =~ tag_regex }
-  echo "Got ${ui_tags.size()} ui tags: ${ui_tags}"
-  if (ui_tags.size() > 0) {
-    echo "Tag ${t} already has UI tags ${ui_tags}"
-    return true
-  }
-  echo "ui tag not found"
-  return false
-}
