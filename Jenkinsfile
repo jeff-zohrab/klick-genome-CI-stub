@@ -19,9 +19,12 @@ githelper = new org.klick.Git()
 // Unique db per Jenkins node/executor.
 @Field String DB_NAME = ""
 
-// Repo:
-CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
-CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+// Config
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this for actual pipeline
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this for actual pipeline
+TAG_USER_NAME = 'Jeff Zohrab' // TODO - fix this for actual pipeline
+TAG_USER_EMAIL = 'jzohrab@gmail.com' // TODO - fix this for actual pipeline
+DEFAULT_JENKINS_CHANNEL = 'jenkins-dev-tests' // TODO - fix this for actual pipeline
 
 node('sensei_build') {
 
@@ -64,7 +67,18 @@ node('sensei_build') {
           fail_on_error: false
         ])
       }
-      else if (isFeatureOrHotfix()) {
+      else if (isQaauto()) {
+        build_back_end()
+        build_front_end()
+        if (pipeline_config.containsKey('selenium_filter')) {
+          ui_testing([
+            selenium_filter: pipeline_config['selenium_filter'],
+            report_to_testrail: false,
+            fail_on_error: true
+          ])
+	}
+      }
+      else {
         build_and_unit_test(pipeline_config.get('nunit_filter', ''))
         if (pipeline_config.containsKey('selenium_filter')) {
           ui_testing([
@@ -72,11 +86,6 @@ node('sensei_build') {
             report_to_testrail: false,
             fail_on_error: true
           ])
-        }
-      }
-      else {
-        stage('Unknown branch type') {
-          error "Unknown branch type (branch = ${env.BRANCH_NAME})"
         }
       }
 
@@ -111,13 +120,14 @@ def isMaster() {
   return (env.BRANCH_NAME == 'master')
 }
 
+def isQaauto() {
+  return (env.BRANCH_NAME.startsWith('qaauto'))
+}
+
 def isRelease() {
   return (env.BRANCH_NAME.startsWith('release'))
 }
 
-def isFeatureOrHotfix() {
-  return (env.BRANCH_NAME.startsWith('feature') || env.BRANCH_NAME.startsWith('hotfix'))
-}
 
 
 def checkout() {
@@ -197,9 +207,9 @@ def override_config_for_branch(config, branch_name) {
 
 
 def get_slack_channel(pipeline_config) {
-  def ret = 'jenkins-dev-tests'
+  def ret = DEFAULT_JENKINS_CHANNEL
   if (isDevelop() || isMaster() || isRelease())
-    ret = 'jenkins-dev-tests'
+    ret = DEFAULT_JENKINS_CHANNEL
   else
     ret = pipeline_config.get('slack_channel', '')
   echo "Using slack channel: ${ret}"
@@ -286,8 +296,8 @@ def add_tag(name, message) {
   args = [
     tag_name: name,
     tag_message: message,
-    tag_user_name: 'Jeff Zohrab',
-    tag_user_email: 'jzohrab@gmail.com',
+    tag_user_name: TAG_USER_NAME,
+    tag_user_email: TAG_USER_EMAIL,
     github_org: CODE_GITHUB_ORG,
     repo_name: CODE_REPO_NAME,
     creds_id: 'github-ci'
@@ -381,7 +391,7 @@ def run_selenium_no_fail(selenium_args) {
 
 
 def run_selenium_script(selenium_args) {
-  timeout(120) {  // minutes
+  timeout(180) {  // minutes
     powershell """QA\\Jenkins\\run_test.ps1 `
       -nunit_filter \"${selenium_args.selenium_filter}\" `
       -report_to_testrail ${selenium_args.report_to_testrail} `
