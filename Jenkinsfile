@@ -48,6 +48,16 @@ node('sensei_build') {
 
       setup_db()
 
+///////////////////////
+// SCRAP
+
+stage('try tag check') {
+  bat 'git fetch'
+  bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
+}
+
+///////////////////////
+
       if (isDevelop()) {
         build_and_unit_test()
         tag_UT()
