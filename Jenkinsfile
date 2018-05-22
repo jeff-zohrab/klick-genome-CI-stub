@@ -40,65 +40,13 @@ node('sensei_build') {
 
     try {
       checkout()
-      // configure()  // TODO RESTORE THIS
+      configure()
 
       def pipeline_config = get_pipeline_config(env.BRANCH_NAME)
       SKIP_STAGES = pipeline_config['skip']
       slack_channel = get_slack_channel(pipeline_config)
 
       setup_db()
-
-///////////////////////
-// TODO _ REMOVE _ SCRAP
-
-stage('try tag check') {
-  bat 'git remote -v'
-
-  // HACK STEALING
-  args = [
-      workspace_dir: env.WORKSPACE,
-      branch_name: env.BRANCH_NAME,
-      github_org: CODE_GITHUB_ORG,
-      repo_name: CODE_REPO_NAME,
-      ref_repo_parent_dir: 'c:\\reference_repo',
-      creds_id: 'github-ci'
-  ]
-  withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
-    bat "git remote add upstream https://${U}:${P}@github.com/${CODE_GITHUB_ORG}/${CODE_REPO_NAME}.git"
-    bat "git fetch upstream"
-    // bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
-  } // end withCredentials
-
-  bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
-
-  def has_tag = githelper.commit_has_tag_matching_regex('adc0eac01c08ba6d91', /UI_\d+/)
-  echo "Commit adc0eac01c08ba6d91 has tag? ${has_tag}"
-
-  def items = [
-'adc0eac01c08ba6d91',
-
-'c224bd634bbc720acf83ed68bd6ea1a3cb4ae126',
-'UT_20180510_170449',
-
-'a95f6c2d2dba7ada4578b59fcb1d5f9c9ab7ed97',
-'UT_20180504_154037',
-'UT_20180504_133100',
-'UI_20180504_133243',
-
-'HEAD'
-  ]
-  for (item in items) {
-    echo '------------------------------'
-    echo "CHECK: ${item}"
-    has_tag = githelper.commit_has_tag_matching_regex(item, /UI_\d+/)
-    echo "Commit ${item} has tag? ${has_tag}"
-  }
-  
-  echo '=========================================='
-  error 'exit'
-}
-
-///////////////////////
 
       if (isDevelop()) {
         build_and_unit_test()
