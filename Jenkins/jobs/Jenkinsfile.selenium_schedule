@@ -100,7 +100,8 @@ def get_latest_UT_tag_to_branch_map() {
   }
 
   echo "Considered: ${target_branches}"
-  echo "Discarded: ${discards}"
+  discards = discards.collect { "* ${it}" }.join("\n")
+  echo "Discarded:\n ${discards}"
   echo "Will schedule the following tags: ${tag_to_branch_map}"
   return tag_to_branch_map
 }
