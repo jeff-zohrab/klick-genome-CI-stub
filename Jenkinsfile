@@ -64,7 +64,8 @@ node('sensei_build') {
         ui_testing([
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
-          fail_on_error: false
+          fail_on_error: false,
+          tag_on_success: true
         ])
       }
       else if (isQaauto()) {
@@ -308,7 +309,15 @@ def test_front_end() {
 }
 
 
-def add_tag(name, message) {
+def add_tag_if_missing(tag_regex, tag_start, message) {
+  if (HEAD_has_tag(tag_regex, "Don't re-tag with ${tag_start}")) {
+    return
+  }
+
+  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
+  def date = new Date()
+  def tagname = tag_start + dateFormat.format(date)
+
   args = [
     tag_name: name,
     tag_message: message,
@@ -323,13 +332,12 @@ def add_tag(name, message) {
 
 
 def tag_UT() {
-  if (HEAD_has_tag(/UT_\d+/, "Don't re-tag with UT")) {
-    return
-  }
-  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
-  def date = new Date()
-  def tagname = "UT_" + dateFormat.format(date)
-  add_tag(tagname, "Unit tests passed.")
+  add_tag_if_missing(/UT_\d+/, "UT_", "Unit tests passed.")
+}
+
+
+def tag_UI() {
+  add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
 }
 
 
@@ -350,6 +358,10 @@ def ui_testing(args_map) {
           -nunit_filter \"${args_map.selenium_filter}\" `
           -report_to_testrail ${args_map.report_to_testrail} `
           -branch_name ${env.BRANCH_NAME}"""
+      }
+      def ran_all_tests = (args_map.selenium_filter == '')
+      if (args_map.get('tag_on_success', false) && ran_all_tests) {
+        tag_UI()
       }
     }
     catch(err) {
