@@ -66,21 +66,11 @@ stage('try tag check') {
   withCredentials([usernamePassword(credentialsId: args.creds_id, passwordVariable: 'P', usernameVariable: 'U')]) {
     bat "git remote add upstream https://${U}:${P}@github.com/${CODE_GITHUB_ORG}/${CODE_REPO_NAME}.git"
     bat "git fetch upstream"
-    // def s = "git fetch https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
-    // bat s
-    // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
-    echo '=========================================='
-    bat 'git log --decorate=full --all'
-    echo '=========================================='
-
-    bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
-
+    // bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
   } // end withCredentials
 
+  bat 'git log -n 4 --decorate=full adc0eac01c08ba6d91'
   echo '=========================================='
-  // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
-  // bat 'git log --decorate=full --all -n 4'
-  // bat 'git log --decorate=full --all'
   raise 'EXIT'
 }
 
