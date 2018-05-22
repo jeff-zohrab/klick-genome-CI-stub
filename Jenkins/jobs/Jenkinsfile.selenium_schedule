@@ -94,6 +94,9 @@ def get_latest_UT_tag_to_branch_map() {
       branches_with_tag << b
       tag_to_branch_map[t] = branches_with_tag
     }
+    else {
+      echo "Branch ${b} doesn't have a UT_ tag, or latest tag ${t}'s commit already has a UI_ tag"
+    }
   }
 
   return tag_to_branch_map
