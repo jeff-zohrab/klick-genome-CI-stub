@@ -74,13 +74,19 @@ stage('try tag check') {
   def has_tag = githelper.commit_has_tag_matching_regex('adc0eac01c08ba6d91', /UI_\d+/)
   echo "Commit adc0eac01c08ba6d91 has tag? ${has_tag}"
 
-  // c224bd634bbc720acf83ed68bd6ea1a3cb4ae126
-  // UT_20180510_170449
-
-  // a95f6c2d2dba7ada4578b59fcb1d5f9c9ab7ed97
-  // UT_20180504_154037
-  // UT_20180504_133100
-  // UI_20180504_133243
+  def items = [
+'adc0eac01c08ba6d91',
+'c224bd634bbc720acf83ed68bd6ea1a3cb4ae126',
+'UT_20180510_170449',
+'a95f6c2d2dba7ada4578b59fcb1d5f9c9ab7ed97',
+'UT_20180504_154037',
+'UT_20180504_133100',
+'UI_20180504_133243'
+  ]
+  for (item in items) {
+    has_tag = githelper.commit_has_tag_matching_regex(item, /UI_\d+/)
+    echo "Commit ${item} has tag? ${has_tag}"
+  }
   
   echo '=========================================='
   error 'exit'
