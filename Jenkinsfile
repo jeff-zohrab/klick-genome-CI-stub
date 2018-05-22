@@ -76,14 +76,18 @@ stage('try tag check') {
 
   def items = [
 'adc0eac01c08ba6d91',
+
 'c224bd634bbc720acf83ed68bd6ea1a3cb4ae126',
 'UT_20180510_170449',
+
 'a95f6c2d2dba7ada4578b59fcb1d5f9c9ab7ed97',
 'UT_20180504_154037',
 'UT_20180504_133100',
 'UI_20180504_133243'
   ]
   for (item in items) {
+    echo '------------------------------'
+    echo "CHECK: ${item}"
     has_tag = githelper.commit_has_tag_matching_regex(item, /UI_\d+/)
     echo "Commit ${item} has tag? ${has_tag}"
   }
