@@ -50,7 +50,8 @@ node('sensei_build') {
 
       if (isDevelop()) {
         build_and_unit_test()
-        tag_UT()
+        def nunit_filter = pipeline_config.get('nunit_filter', '')
+        tag_UT(nunit_filter)
       }
       else if (isMaster()) {
         build_and_unit_test()
@@ -58,9 +59,7 @@ node('sensei_build') {
       else if (isRelease()) {
         def nunit_filter = pipeline_config.get('nunit_filter', '')
         build_and_unit_test(nunit_filter)
-        if (!pipeline_config_skipped_stage('NUnit') && nunit_filter == '') {
-          tag_UT()  // We ran all the tests.
-        }
+        tag_UT(nunit_filter)
         ui_testing([
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
@@ -331,19 +330,26 @@ def add_tag_if_missing(tag_regex, tag_start, message) {
 }
 
 
-def tag_UT() {
-  add_tag_if_missing(/UT_\d+/, "UT_", "Unit tests passed.")
+def tag_UT(nunit_filter) {
+  def ran_nunit = !pipeline_config_skipped_stage('NUnit')
+  def ran_all_tests = (nunit_filter == '')
+  if (ran_nunit && ran_all_tests) {
+    add_tag_if_missing(/UT_\d+/, "UT_", "Unit tests passed.")
+  }
+  else {
+    echo "Not adding UT_ tag (ran_nunit=${ran_nunit}, ran_all_tests=${ran_all_tests})"
+  }
 }
 
 
 // Tag if tagging is required, and if all the tests were run.
 def tag_UI(tag_on_success, selenium_filter) {
   def ran_all_tests = (selenium_filter == '')
-  if (!tag_on_success || !ran_all_tests) {
-    echo "Not adding UI_ tag (tag_on_success=${tag_on_success}, ran_all_tests=${ran_all_tests})"
+  if (tag_on_success && ran_all_tests) {
+    add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
   }
   else {
-    add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
+    echo "Not adding UI_ tag (tag_on_success=${tag_on_success}, ran_all_tests=${ran_all_tests})"
   }
 }
 
