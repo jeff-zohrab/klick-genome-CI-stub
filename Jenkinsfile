@@ -68,7 +68,8 @@ stage('try tag check') {
     bat "git fetch upstream"
     // def s = "git fetch https://${U}:${P}@github.com/${args.github_org}/${args.repo_name}.git"
     // bat s
-    bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
+    // bat 'git log --decorate=full adc0eac01c08ba6d91 -n 4'
+    bat 'git log --decorate=full --all'
   } // end withCredentials
 
   echo '=========================================='
