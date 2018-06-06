@@ -26,7 +26,6 @@ node('sensei_build') {
       stage('Schedule jobs') {
         add_upstream_remote()
         tag_to_branches_map = get_latest_UT_tag_to_branch_map()
-        echo "Will schedule the following: ${tag_to_branches_map}"
         for (tag in tag_to_branch_map.keySet()) {
           def branch_list_string = tag_to_branch_map[tag].join(', ')
           echo "Calling ${tag} for branches ${branch_list_string}"
@@ -85,17 +84,25 @@ def get_latest_UT_tag_to_branch_map() {
   def target_branches = branches.
     findAll { s -> s == 'develop' || s.startsWith('release') }
 
+  discards = []
   tag_to_branch_map = [:]
   for (b in target_branches) {
     fetch_all_tags(b)
     def t = latest_tag_matching(b, /^UT_\d+/)
-    if (t != null && !commit_already_has_UI_tag(t, /^UI_\d+/)) {
+    if (t != null && !githelper.commit_has_tag_matching_regex(t, /^UI_\d+/)) {
       branches_with_tag = tag_to_branch_map.get(t, [])
       branches_with_tag << b
       tag_to_branch_map[t] = branches_with_tag
     }
+    else {
+      discards << "${b} doesn't have UT_ tag, or latest tag ${t}'s commit already has a UI_ tag"
+    }
   }
 
+  echo "Considered: ${target_branches}"
+  discards = discards.collect { "* ${it}" }.join("\n")
+  echo "Discarded:\n ${discards}"
+  echo "Will schedule the following tags: ${tag_to_branch_map}"
   return tag_to_branch_map
 }
 
@@ -170,16 +177,3 @@ def latest_tag_matching(current_branch, tag_regex) {
   }
 }
 
-
-def commit_already_has_UI_tag(t, tag_regex) {
-  def all_tags_on_current = bat(returnStdout: true, script: "git tag --points-at ${t}")
-  def ui_tags = all_tags_on_current.
-    split("\n").
-    collect { s -> s.trim() }.
-    findAll { s -> s =~ tag_regex }
-  if (ui_tags.size() > 0) {
-    echo "Tag ${t} already has UI tags ${ui_tags}"
-    return true
-  }
-  return false
-}

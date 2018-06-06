@@ -19,9 +19,12 @@ githelper = new org.klick.Git()
 // Unique db per Jenkins node/executor.
 @Field String DB_NAME = ""
 
-// Repo:
-CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
-CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+// Config
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this for actual pipeline
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this for actual pipeline
+TAG_USER_NAME = 'Jeff Zohrab' // TODO - fix this for actual pipeline
+TAG_USER_EMAIL = 'jzohrab@gmail.com' // TODO - fix this for actual pipeline
+DEFAULT_JENKINS_CHANNEL = 'jenkins-dev-tests' // TODO - fix this for actual pipeline
 
 node('sensei_build') {
 
@@ -47,7 +50,8 @@ node('sensei_build') {
 
       if (isDevelop()) {
         build_and_unit_test()
-        tag_UT()
+        def nunit_filter = pipeline_config.get('nunit_filter', '')
+        tag_UT(nunit_filter)
       }
       else if (isMaster()) {
         build_and_unit_test()
@@ -55,16 +59,26 @@ node('sensei_build') {
       else if (isRelease()) {
         def nunit_filter = pipeline_config.get('nunit_filter', '')
         build_and_unit_test(nunit_filter)
-        if (!pipeline_config_skipped_stage('NUnit') && nunit_filter == '') {
-          tag_UT()  // We ran all the tests.
-        }
+        tag_UT(nunit_filter)
         ui_testing([
           selenium_filter: pipeline_config.get('selenium_filter', ''),
           report_to_testrail: true,
-          fail_on_error: false
+          fail_on_error: false,
+          tag_on_success: true
         ])
       }
-      else if (isFeatureOrHotfix()) {
+      else if (isQaauto()) {
+        build_back_end()
+        build_front_end()
+        if (pipeline_config.containsKey('selenium_filter')) {
+          ui_testing([
+            selenium_filter: pipeline_config['selenium_filter'],
+            report_to_testrail: false,
+            fail_on_error: true
+          ])
+	}
+      }
+      else {
         build_and_unit_test(pipeline_config.get('nunit_filter', ''))
         if (pipeline_config.containsKey('selenium_filter')) {
           ui_testing([
@@ -72,11 +86,6 @@ node('sensei_build') {
             report_to_testrail: false,
             fail_on_error: true
           ])
-        }
-      }
-      else {
-        stage('Unknown branch type') {
-          error "Unknown branch type (branch = ${env.BRANCH_NAME})"
         }
       }
 
@@ -111,13 +120,14 @@ def isMaster() {
   return (env.BRANCH_NAME == 'master')
 }
 
+def isQaauto() {
+  return (env.BRANCH_NAME.startsWith('qaauto'))
+}
+
 def isRelease() {
   return (env.BRANCH_NAME.startsWith('release'))
 }
 
-def isFeatureOrHotfix() {
-  return (env.BRANCH_NAME.startsWith('feature') || env.BRANCH_NAME.startsWith('hotfix'))
-}
 
 
 def checkout() {
@@ -197,9 +207,9 @@ def override_config_for_branch(config, branch_name) {
 
 
 def get_slack_channel(pipeline_config) {
-  def ret = 'jenkins-dev-tests'
+  def ret = DEFAULT_JENKINS_CHANNEL
   if (isDevelop() || isMaster() || isRelease())
-    ret = 'jenkins-dev-tests'
+    ret = DEFAULT_JENKINS_CHANNEL
   else
     ret = pipeline_config.get('slack_channel', '')
   echo "Using slack channel: ${ret}"
@@ -256,8 +266,21 @@ def build_back_end() {
 }
 
 
+def HEAD_has_tag(tag_regex, message) {
+  if (githelper.commit_has_tag_matching_regex('HEAD', tag_regex)) {
+    echo "${message} (current commit already has tag matching ${tag_regex})."
+    return true
+  }
+
+  return false
+}
+
+
 def test_back_end(nunit_filter) {
   optional_stage('NUnit') {
+    if (HEAD_has_tag(/UT_\d+/, 'Skip NUnit')) {
+      return
+    }
     try {
       bat "rake runtests[\"$nunit_filter\"]"
     }
@@ -277,17 +300,28 @@ def build_front_end() {
 
 def test_front_end() {
   optional_stage('Npm test') {
+    if (HEAD_has_tag(/UT_\d+/, 'Skip Npm test')) {
+      return
+    }
     bat 'npm test -- --single-run'
   }
 }
 
 
-def add_tag(name, message) {
+def add_tag_if_missing(tag_regex, tag_start, message) {
+  if (HEAD_has_tag(tag_regex, "Don't re-tag with ${tag_start}")) {
+    return
+  }
+
+  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
+  def date = new Date()
+  def tagname = tag_start + dateFormat.format(date)
+
   args = [
-    tag_name: name,
+    tag_name: tagname,
     tag_message: message,
-    tag_user_name: 'Jeff Zohrab',
-    tag_user_email: 'jzohrab@gmail.com',
+    tag_user_name: TAG_USER_NAME,
+    tag_user_email: TAG_USER_EMAIL,
     github_org: CODE_GITHUB_ORG,
     repo_name: CODE_REPO_NAME,
     creds_id: 'github-ci'
@@ -296,31 +330,55 @@ def add_tag(name, message) {
 }
 
 
-def tag_UT() {
-  def dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss")
-  def date = new Date()
-  def tagname = "UT_" + dateFormat.format(date)
-  add_tag(tagname, "Unit tests passed.")
+def tag_UT(nunit_filter) {
+  def ran_nunit = !pipeline_config_skipped_stage('NUnit')
+  def ran_all_tests = (nunit_filter == '')
+  if (ran_nunit && ran_all_tests) {
+    add_tag_if_missing(/UT_\d+/, "UT_", "Unit tests passed.")
+  }
+  else {
+    echo "Not adding UT_ tag (ran_nunit=${ran_nunit}, ran_all_tests=${ran_all_tests})"
+  }
+}
+
+
+// Tag if tagging is required, and if all the tests were run.
+def tag_UI(tag_on_success, selenium_filter) {
+  def ran_all_tests = (selenium_filter == '')
+  if (tag_on_success && ran_all_tests) {
+    add_tag_if_missing(/UI_\d+/, "UI_", "UI tests passed.")
+  }
+  else {
+    echo "Not adding UI_ tag (tag_on_success=${tag_on_success}, ran_all_tests=${ran_all_tests})"
+  }
 }
 
 
 def ui_testing(args_map) {
   echo "Got args: ${args_map}"
   stage('Run Selenium test') {
+    if (HEAD_has_tag(/UI_\d+/, 'Skip Selenium test')) {
+      return
+    }
+
     configure_iis_and_start_site()
     bat 'rake compileqaattributedecorator compileqauitesting'
     reset_and_migrate_db()  // Required, as earlier stages may destroy data.
-    selenium_args = [
-      branch_name: env.BRANCH_NAME,
-      selenium_filter: args_map.selenium_filter,
-      report_to_testrail: args_map.report_to_testrail
-    ]
 
-    if (args_map.fail_on_error) {
-      run_selenium(selenium_args)
+    try {
+      timeout(180) {  // minutes
+        powershell """QA\\Jenkins\\run_test.ps1 `
+          -nunit_filter \"${args_map.selenium_filter}\" `
+          -report_to_testrail ${args_map.report_to_testrail} `
+          -branch_name ${env.BRANCH_NAME}"""
+      }
+      tag_UI(args_map.get('tag_on_success', false), args_map.selenium_filter)
     }
-    else {
-      run_selenium_no_fail(selenium_args)
+    catch(err) {
+      handle_error(err, args_map.fail_on_error)
+    }
+    finally {
+      publish_selenium_artifacts(args_map.fail_on_error)
     }
   }
 }
@@ -337,60 +395,23 @@ def configure_iis_and_start_site() {
 }
 
 
-// Run selenium, and fail the branch if tests fail.
-// selenium_args: a map with the following values:
-//   * selenium_filter: string
-//   * report_to_testrail: true/false
-//   * branch_name: branch
-def run_selenium(selenium_args) {
-  try {
-    run_selenium_script(selenium_args)
+// In some cases (e.g.release branches), we don't fail the build
+// if tests fail, as some tests are flaky.
+def handle_error(err, fail_on_error) {
+  if (fail_on_error) {
+    throw err
   }
-  finally {
-    // The Jenkins nunit plugin marks the build
-    // as "failed" if any tests fail.
-    nunit testResultsPattern: 'SeleniumTestResult.xml'
-    publish_selenium_artifacts()
-  }
+  echo "Some tests failed, but we're ignoring them."
 }
 
 
-// Run selenium tests, but don't fail the branch even if tests fail.
-// This method is separate from the run_selenium() method as it has
-// completely different behaviour.
-// selenium_args: a map with the following values:
-//   * selenium_filter: string
-//   * report_to_testrail: true/false
-//   * branch_name: branch
-def run_selenium_no_fail(selenium_args) {
-  try {
-    run_selenium_script(selenium_args)
-  }
-  catch(err) {
-    // We're not failing the build if Selenium fails.
-    // In some cases (e.g.release branches), we don't want to fail the build
-    // if tests fail, as some tests are flaky.
-    // Since the nunit plugin fails the whole build if
-    // it sees test errors, don't use it.
-    echo "Some tests failed, but we're ignoring them."
-  }
-  finally {
-    publish_selenium_artifacts()
-  }
-}
-
-
-def run_selenium_script(selenium_args) {
-  timeout(120) {  // minutes
-    powershell """QA\\Jenkins\\run_test.ps1 `
-      -nunit_filter \"${selenium_args.selenium_filter}\" `
-      -report_to_testrail ${selenium_args.report_to_testrail} `
-      -branch_name ${selenium_args.branch_name}"""
-  }
-}
-
-
-def publish_selenium_artifacts() {
+def publish_selenium_artifacts(fail_on_error) {
   def artifact_pattern = 'QA\\UITesting\\SenseiOS.UI.Tests\\bin\\Debug\\Artifacts\\*.*'
   archiveArtifacts allowEmptyArchive: true, artifacts: artifact_pattern
+
+  // The nunit plugin fails the whole build if
+  // it sees test errors, so only use it if failing the build.
+  if (fail_on_error) {
+    nunit testResultsPattern: 'SeleniumTestResult.xml'
+  }
 }
