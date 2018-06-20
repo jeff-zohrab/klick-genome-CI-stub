@@ -1,0 +1,8 @@
+# Config
+
+:google_sheet:
+
+  # See https://developers.google.com/sheets/api/guides/concepts
+  :spreadsheet_id: 15iVQx5Ds93VE6fFXog0db79stKfCsffK7Kh8OpGnEvM
+  :people_range: 'people!A3:H'
+  :team_range: 'teams!A2:B'
