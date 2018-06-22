@@ -18,19 +18,36 @@ SLACK_CHANNEL = 'jenkins-dev-tests'  // TODO - fix this
 
 node('sensei_build') {
 
+  // Suppressing even number builds, so this job only runs
+  // every other week.
+  def build_number = env.BUILD_NUMBER as int
+  if ((build_number % 2) == 0) {
+    echo "Suppressing even number builds!"
+    echo """THIS IS A HACK TO MAKE THIS JOB RUN BIWEEKLY.
+
+Jenkins cron scheduling currently doesn't support scheduling a
+bi-weekly job.  We could resort to shell or other tricks to
+calculate if the job should be run (e.g., comparing to the date
+of the last run job), it's annoying, and this works just as well.
+
+Schedule this job to run weekly.  It will exit early every other week.
+
+refs:
+* https://stackoverflow.com/questions/33785196/i-want-jenkins-job-to-build-every-two-weeks
+* https://issues.jenkins-ci.org/browse/JENKINS-19756
+
+"""
+    currentBuild.result = 'SUCCESS'
+    return
+  }
+
+
   // Create directory (the GitHub plugin directory names are unwieldy,
   // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
   genome.create_dir("c:\\www")
   ws("c:\\www\\genome") {
 
     try {
-
-      def build_number = env.BUILD_NUMBER as int
-      if ((build_number % 2) == 0) {
-        echo "Suppressing even number builds!"
-        currentBuild.result = 'SUCCESS'
-        return
-      }
 
       error 'stopping'
 
