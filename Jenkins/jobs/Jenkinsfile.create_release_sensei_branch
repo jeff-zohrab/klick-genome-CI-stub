@@ -49,8 +49,6 @@ refs:
 
     try {
 
-      error 'stopping'
-
       stage('Checkout') {
         checkout()
       }
