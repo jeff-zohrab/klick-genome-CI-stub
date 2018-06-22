@@ -55,7 +55,7 @@ refs:
       stage('Create branch') {
         add_upstream_remote()
         tag = get_latest_develop_genome_tag()
-        branch_name = create_release_branch_name()
+        branch_name = create_release_sensei_branch_name()
         echo "Creating release branch from ${tag}"
         bat "git checkout ${tag} -b ${branch_name}"
         bat "git push upstream ${branch_name}"
