@@ -31,7 +31,7 @@ node('sensei_build') {
         branch_name = create_release_branch_name()
         echo "Creating release branch from ${tag}"
         bat "git checkout ${tag} -b ${branch_name}"
-        bat "git push upstreamxxx ${branch_name}"
+        bat "git push upstream ${branch_name}"
         post_success_message(branch_name, tag, SLACK_CHANNEL)
       }
 
@@ -82,13 +82,6 @@ def add_upstream_remote() {
   withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
     bat "git remote add upstream https://${U}:${P}@github.com/${CODE_GITHUB_ORG}/${CODE_REPO_NAME}.git"
   } // end with
-}
-
-
-def create_release_branch_from_tag(tag) {
-  branch_name = create_release_branch_name()
-  bat "git checkout ${tag} -b ${branch_name}"
-  bat "git push upstream ${branch_name}"
 }
 
 
