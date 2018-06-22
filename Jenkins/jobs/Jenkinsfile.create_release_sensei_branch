@@ -1,0 +1,160 @@
+// Job to create release-sensei branch
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+import java.text.SimpleDateFormat
+
+// Shared libraries, configured in https://ci.senseilabs.com/configure.
+// Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
+@Library('genome') _
+genome = new org.klick.Genome()
+githelper = new org.klick.Git()
+senseislack = new org.klick.SenseiSlack()
+
+// Config:
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
+SLACK_CHANNEL = 'jenkins-dev-tests'  // TODO - fix this
+
+
+node('sensei_build') {
+
+  // Create directory (the GitHub plugin directory names are unwieldy,
+  // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
+  genome.create_dir("c:\\www")
+  ws("c:\\www\\genome") {
+
+    try {
+
+      if ((env.BUILD_NUMBER % 1) == 0) {
+        echo "Suppressing odd number builds."
+        currentBuild.result = 'SUCCESS'
+        return
+      }
+
+      error 'stopping'
+
+      stage('Checkout') {
+        checkout()
+      }
+      stage('Create branch') {
+        add_upstream_remote()
+        tag = get_latest_develop_genome_tag()
+        branch_name = create_release_branch_name()
+        echo "Creating release branch from ${tag}"
+        bat "git checkout ${tag} -b ${branch_name}"
+        bat "git push upstream ${branch_name}"
+        post_success_message(branch_name, tag, SLACK_CHANNEL)
+      }
+
+      currentBuild.result = 'SUCCESS'
+
+    } // end try
+    catch(FlowInterruptedException interruptEx) {
+      currentBuild.result = 'ABORTED'
+    }
+    catch(err) {
+      echo "Error: ${err}"
+      post_failure_message(err, SLACK_CHANNEL)
+      currentBuild.result = 'FAILURE'
+    }
+    finally {
+      cleanWs()
+    }
+  } // end ws()
+}  // end node
+
+
+///////////////////////////////////////////////////
+// Helpers
+
+
+def checkout() {
+  cleanWs()
+  checkout_args = [
+    workspace_dir: env.WORKSPACE,
+    branch_name: 'develop',
+    github_org: CODE_GITHUB_ORG,
+    repo_name: CODE_REPO_NAME,
+    ref_repo_parent_dir: 'c:\\reference_repo',
+    creds_id: 'github-ci'
+  ]
+  githelper.checkout_from_reference_repo(checkout_args)
+}
+
+
+// Some commands may fail, which is annoying but shouldn't be fatal.
+def bat_no_fail(command) {
+  try { bat command } catch(err) { }
+}
+
+
+def add_upstream_remote() {
+  bat_no_fail("git remote remove upstream")
+  withCredentials([usernamePassword(credentialsId: 'github-ci', passwordVariable: 'P', usernameVariable: 'U')]) {
+    bat "git remote add upstream https://${U}:${P}@github.com/${CODE_GITHUB_ORG}/${CODE_REPO_NAME}.git"
+  } // end with
+}
+
+
+def create_release_sensei_branch_name() {
+  def dateFormat = new SimpleDateFormat("yyyyMMdd")
+  def date = new Date()
+  return "release-sensei-${dateFormat.format(date)}"
+}
+
+
+def get_latest_develop_genome_tag() {
+  // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
+  // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
+  bat "git fetch --progress --shallow-since=4weeks upstream +develop:develop"
+  t = latest_tag_matching('develop', /^genome_\d+/)
+  echo "Got tag: ${t}"
+  return t
+}
+
+
+// Returns the latest tag matching the regex.
+def latest_tag_matching(current_branch, tag_regex) {
+
+  // "--merged" only includes tags reachable from the specified branch.
+  // ref https://stackoverflow.com/questions/2381665/list-tags-contained-by-a-branch
+  def all_tags = bat(returnStdout: true, script: "git tag --merged ${current_branch}")
+  // echo all_tags
+
+  candidates = all_tags.
+    split("\n").
+    collect { s -> s.trim() }.
+    findAll { s -> s =~ tag_regex }.
+    sort().
+    reverse()
+  
+  // echo "Candidates: ${candidates}"
+  // echo "Latest: ${candidates[0]}"
+
+  if (candidates.size() == 0) {
+    echo "No tag matching ${tag_regex} found in ${current_branch}"
+    return null
+  }
+  else {
+    def t = candidates[0]
+    echo "Tag ${t} found in ${current_branch}"
+    return t
+  }
+}
+
+
+def post_success_message(branch_name, tag_name, slack_channel) {
+  def subject = "*New release-sensei branch*"
+  def body = """
+```
+Branch:   ${branch_name}
+From tag: ${tag_name}
+```
+"""
+  senseislack.post_success([subject: subject, body: body, channel: slack_channel])
+}
+
+def post_failure_message(err, slack_channel) {
+  def subject = "*release-sensei creation failed*"
+  senseislack.post_failure([subject: subject, channel: slack_channel])
+}
