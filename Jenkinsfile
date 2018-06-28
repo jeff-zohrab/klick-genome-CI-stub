@@ -1,14 +1,27 @@
 // Sensei build Jenkins pipeline.
 
+// Config
+CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this for actual pipeline
+CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this for actual pipeline
+TAG_USER_NAME = 'Jeff Zohrab' // TODO - fix this for actual pipeline
+TAG_USER_EMAIL = 'jzohrab@gmail.com' // TODO - fix this for actual pipeline
+DEFAULT_JENKINS_CHANNEL = 'jenkins-dev-tests' // TODO - fix this for actual pipeline
+
+
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.text.SimpleDateFormat
 import groovy.transform.Field
+import groovy.json.JsonSlurperClassic
 
 // Shared libraries, configured in https://ci.senseilabs.com/configure.
 // Ref https://jenkins.io/doc/book/pipeline/shared-libraries/
 @Library('genome') _
 genome = new org.klick.Genome()
 githelper = new org.klick.Git()
+senseislack = new org.klick.SenseiSlack()
+
+// User pipeline configuration (see Jenkins/config/README.md).
+@Field PIPELINE_CONFIG = [:]
 
 // Users can skip stages using config files (see Jenkins/config/README.md).
 // The global variable (!) allows for the optional_stage helper method.
@@ -19,17 +32,8 @@ githelper = new org.klick.Git()
 // Unique db per Jenkins node/executor.
 @Field String DB_NAME = ""
 
-// Config
-CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this for actual pipeline
-CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this for actual pipeline
-TAG_USER_NAME = 'Jeff Zohrab' // TODO - fix this for actual pipeline
-TAG_USER_EMAIL = 'jzohrab@gmail.com' // TODO - fix this for actual pipeline
-DEFAULT_JENKINS_CHANNEL = 'jenkins-dev-tests' // TODO - fix this for actual pipeline
 
 node('sensei_build') {
-
-  // Slack channel to report to.
-  def slack_channel = ''
 
   DB_NAME = "intranet_jnk_${env.NODE_NAME}_${env.EXECUTOR_NUMBER}"
 
@@ -42,26 +46,25 @@ node('sensei_build') {
       checkout()
       configure()
 
-      def pipeline_config = get_pipeline_config(env.BRANCH_NAME)
-      SKIP_STAGES = pipeline_config['skip']
-      slack_channel = get_slack_channel(pipeline_config)
+      PIPELINE_CONFIG = get_pipeline_config(env.BRANCH_NAME)
+      SKIP_STAGES = PIPELINE_CONFIG['skip']
 
       setup_db()
 
       if (isDevelop()) {
         build_and_unit_test()
-        def nunit_filter = pipeline_config.get('nunit_filter', '')
+        def nunit_filter = PIPELINE_CONFIG.get('nunit_filter', '')
         tag_UT(nunit_filter)
       }
       else if (isMaster()) {
         build_and_unit_test()
       }
       else if (isRelease()) {
-        def nunit_filter = pipeline_config.get('nunit_filter', '')
+        def nunit_filter = PIPELINE_CONFIG.get('nunit_filter', '')
         build_and_unit_test(nunit_filter)
         tag_UT(nunit_filter)
         ui_testing([
-          selenium_filter: pipeline_config.get('selenium_filter', ''),
+          selenium_filter: PIPELINE_CONFIG.get('selenium_filter', ''),
           report_to_testrail: true,
           fail_on_error: false,
           tag_on_success: true
@@ -70,19 +73,19 @@ node('sensei_build') {
       else if (isQaauto()) {
         build_back_end()
         build_front_end()
-        if (pipeline_config.containsKey('selenium_filter')) {
+        if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
           ui_testing([
-            selenium_filter: pipeline_config['selenium_filter'],
+            selenium_filter: PIPELINE_CONFIG['selenium_filter'],
             report_to_testrail: false,
             fail_on_error: true
           ])
 	}
       }
       else {
-        build_and_unit_test(pipeline_config.get('nunit_filter', ''))
-        if (pipeline_config.containsKey('selenium_filter')) {
+        build_and_unit_test(PIPELINE_CONFIG.get('nunit_filter', ''))
+        if (PIPELINE_CONFIG.containsKey('selenium_filter')) {
           ui_testing([
-            selenium_filter: pipeline_config['selenium_filter'],
+            selenium_filter: PIPELINE_CONFIG['selenium_filter'],
             report_to_testrail: false,
             fail_on_error: true
           ])
@@ -90,6 +93,10 @@ node('sensei_build') {
       }
 
       currentBuild.result = 'SUCCESS'
+      def p = currentBuild.previousBuild
+      if (p != null && p.result != 'SUCCESS') {
+        send_slack_back_to_normal()
+      }
 
     } // end try
     catch(FlowInterruptedException interruptEx) {
@@ -97,11 +104,10 @@ node('sensei_build') {
     }
     catch(err) {
       echo "Error: ${err}"
-      genome.notify_slack_channel_failure(err, slack_channel)
+      send_slack_failure(err)
       currentBuild.result = 'FAILURE'
     }
     finally {
-      genome.notify_slack_channel_if_back_to_normal(currentBuild, slack_channel)
       genome.stop_iis()
       cleanWs()
     }
@@ -128,6 +134,9 @@ def isRelease() {
   return (env.BRANCH_NAME.startsWith('release'))
 }
 
+def isCriticalBranch() {
+  return (isDevelop() || isMaster() || isRelease())
+}
 
 
 def checkout() {
@@ -203,17 +212,6 @@ def override_config_for_branch(config, branch_name) {
   }
 
   return config
-}
-
-
-def get_slack_channel(pipeline_config) {
-  def ret = DEFAULT_JENKINS_CHANNEL
-  if (isDevelop() || isMaster() || isRelease())
-    ret = DEFAULT_JENKINS_CHANNEL
-  else
-    ret = pipeline_config.get('slack_channel', '')
-  echo "Using slack channel: ${ret}"
-  return ret
 }
 
 
@@ -414,4 +412,119 @@ def publish_selenium_artifacts(fail_on_error) {
   if (fail_on_error) {
     nunit testResultsPattern: 'SeleniumTestResult.xml'
   }
+}
+
+
+// ------------------------
+// Slack notifications
+
+def send_slack_failure(err) {
+  def subject = "*${env.BRANCH_NAME}* build failed"
+  def channels = get_slack_channels()
+  echo "Notifying failure on slack channels: ${channels}"
+  for (c in channels) {
+    def append = get_last_committer_message(c)
+    senseislack.post_failure([subject: subject + append, channel: c])
+  }
+}
+
+
+// When sending a message to a team channel, append
+// who made the last commit to the branch.
+// Don't bother adding anything for direct messages,
+// and don't "blame" anyone for critical branches.
+def get_last_committer_message(channel) {
+  if (channel.startsWith('@') || isCriticalBranch())
+    return ''
+  return " (last commit by ${last_committer_email().replaceAll(/@.*/, '')})"
+}
+
+
+def send_slack_back_to_normal() {
+  def subject = "*${env.BRANCH_NAME}* build passed, back to normal! :tada:"
+  def channels = get_slack_channels()
+  echo "Notifying back to normal on slack channels: ${channels}"
+  for (c in channels) {
+    senseislack.post_success([subject: subject, channel: c])
+  }
+}
+
+
+def get_slack_channels() {
+  if (isCriticalBranch()) {
+    return [ DEFAULT_JENKINS_CHANNEL ]
+  }
+
+  // Jenkins config files
+  configured = PIPELINE_CONFIG.get('slack_channel', '')
+  if (configured != '')
+    return configured.split(',').collect { it.trim() }
+
+  try {
+    return get_slack_channels_from_google_sheet()
+  }
+  catch(err) {
+    // Swallow this exception ... if gsheets lookup fails,
+    // it shouldn't fail the build!
+    echo "WARNING: failed gsheets lookup.  ${err}"
+    senseislack.post_failure([subject: "Failed gsheets lookup", body: "`${err}`", channel: '#ops-jenkins'])
+  }
+
+  // Fallback.
+  return []
+}
+
+
+def last_committer_email() {
+  def raw = bat(script: 'git log -n 1 --format="%%ae"', returnStdout: true)
+  def emails = raw.split("\n").findAll { it.contains('@') }
+  if (emails.size() == 0)
+    return 'unknown@unknown.com'   // In case people didn't specify their email.
+  return emails[0]
+}
+
+
+def get_slack_channels_from_google_sheet() {
+  def email = last_committer_email()
+  echo "Looking up email: ${email}"
+
+  def data = [:]
+  dir('Scripts/team_lookup') {
+    config_team_lookup()
+    bat "ruby lookup_slack_channel.rb --email ${email} --output channel.json"
+    data = getJson(readFile('channel.json'))
+  }
+  echo "Got data: ${data}"
+
+  if (data.warning.trim() != '') {
+    def msg = [subject: data.warning, channel: '#ops-jenkins']
+    senseislack.post_warning(msg)
+  }
+
+  return data.channels.
+    flatten().
+    findAll { it != null && it.trim() != '' }.
+    sort().
+    unique()
+}
+
+
+def config_team_lookup() {
+  bat "rake gem:install_cert gem:install"
+  withCredentials([
+      file(credentialsId: 'google-sheets-client-secret-json', variable: 'CS'),
+      file(credentialsId: 'google-sheets-token-yml', variable: 'T')
+    ]) {
+    writeFile file: 'client_secret.json', text: readFile(CS)
+    writeFile file: 'token.yml', text: readFile(T)
+  }
+}
+
+
+// Use JsonSlurperClassic -- JsonSlurper returns LazyMap, which causes all
+// sorts of trouble non-serializable exceptions.  Big time waster!
+@NonCPS
+def getJson(s) {
+  def slurper = new groovy.json.JsonSlurperClassic()
+  return slurper.parseText(s)
 }

@@ -1,0 +1,57 @@
+require 'rbconfig'
+require 'fileutils'
+require 'date'
+require 'find'
+
+require_relative 'sensei-lookup'
+
+$stdout.sync = true
+
+namespace :gem do
+
+  # May need to manually install a valid cert to get gems.
+  # Ref https://github.com/rubygems/rubygems/issues/1745
+  desc "Install rubygems cert (only do this if you get ssl failures on install_gems)"
+  task :install_cert do
+    ruby_bin = RbConfig::CONFIG["bindir"]
+    ruby_lib = File.expand_path(File.join(ruby_bin, '..', 'lib', 'ruby'))
+    ssl_cert_dirs = []
+    Find.find(ruby_lib) do |path|
+      # Don't look into docs ... this cuts the search time by 95%
+      if (path =~ /doc$/ || path =~ /ri$/) then
+        Find.prune
+      else
+        ssl_cert_dirs << path if path =~ /ssl_certs$/
+      end
+    end
+    cert = File.join(File.dirname(__FILE__), 'certs', 'RubyGems_GlobalSignRootCA.pem')
+    ssl_cert_dirs.each do |d|
+      dest = File.join(d, 'GlobalSignRootCA.pem')
+      puts "  copying #{cert} to #{dest}"
+      FileUtils.copy(cert, dest)
+    end
+  end
+
+  desc "Install gems"
+  task :install do
+    puts `gem install bundler --no-ri --no-doc`
+    puts `bundle install`
+  end
+
+end
+
+namespace :sheets do
+
+  desc "Authenticate and authorize, get oauth token"
+  task :authorize do
+    s = SenseiLookup.new()
+    s.authorize
+  end
+
+  desc "Test reading the spreadsheet"
+  task :test do
+    s = SenseiLookup.new()
+    s.test()
+  end
+
+end

@@ -1,4 +1,4 @@
-// Job to create release branch
+// Job to create release-sensei branch
 
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import java.text.SimpleDateFormat
@@ -8,13 +8,39 @@ import java.text.SimpleDateFormat
 @Library('genome') _
 genome = new org.klick.Genome()
 githelper = new org.klick.Git()
+senseislack = new org.klick.SenseiSlack()
 
 // Config:
 CODE_GITHUB_ORG = 'jeff-zohrab'  // TODO - fix this
 CODE_REPO_NAME = 'klick-genome-CI-stub'  // TODO - fix this
 SLACK_CHANNEL = 'jenkins-dev-tests'  // TODO - fix this
 
+
 node('sensei_build') {
+
+  // Suppressing even number builds, so this job only runs
+  // every other week.
+  def build_number = env.BUILD_NUMBER as int
+  if ((build_number % 2) == 0) {
+    echo "Suppressing even number builds!"
+    echo """THIS IS A HACK TO MAKE THIS JOB RUN BIWEEKLY.
+
+Jenkins cron scheduling currently doesn't support scheduling a
+bi-weekly job.  We could resort to shell or other tricks to
+calculate if the job should be run (e.g., comparing to the date
+of the last run job), it's annoying, and this works just as well.
+
+Schedule this job to run weekly.  It will exit early every other week.
+
+refs:
+* https://stackoverflow.com/questions/33785196/i-want-jenkins-job-to-build-every-two-weeks
+* https://issues.jenkins-ci.org/browse/JENKINS-19756
+
+"""
+    currentBuild.result = 'SUCCESS'
+    return
+  }
+
 
   // Create directory (the GitHub plugin directory names are unwieldy,
   // per https://issues.jenkins-ci.org/browse/JENKINS-38706).
@@ -22,13 +48,14 @@ node('sensei_build') {
   ws("c:\\www\\genome") {
 
     try {
+
       stage('Checkout') {
         checkout()
       }
       stage('Create branch') {
         add_upstream_remote()
-        tag = get_latest_develop_UT_tag()
-        branch_name = create_release_branch_name()
+        tag = get_latest_develop_genome_tag()
+        branch_name = create_release_sensei_branch_name()
         echo "Creating release branch from ${tag}"
         bat "git checkout ${tag} -b ${branch_name}"
         bat "git push upstream ${branch_name}"
@@ -85,18 +112,18 @@ def add_upstream_remote() {
 }
 
 
-def create_release_branch_name() {
+def create_release_sensei_branch_name() {
   def dateFormat = new SimpleDateFormat("yyyyMMdd")
   def date = new Date()
-  return "release-${dateFormat.format(date)}"
+  return "release-sensei-${dateFormat.format(date)}"
 }
 
 
-def get_latest_develop_UT_tag() {
+def get_latest_develop_genome_tag() {
   // Ref https://git-scm.com/docs/git-fetch#git-fetch-ltrefspecgt and
   // https://git-scm.com/docs/git-fetch#_examples for notes on "+develop:develop"
-  bat "git fetch --progress --shallow-since=3weeks upstream +develop:develop"
-  t = latest_tag_matching('develop', /^UT_\d+/)
+  bat "git fetch --progress --shallow-since=4weeks upstream +develop:develop"
+  t = latest_tag_matching('develop', /^genome_\d+/)
   echo "Got tag: ${t}"
   return t
 }
@@ -133,31 +160,17 @@ def latest_tag_matching(current_branch, tag_regex) {
 
 
 def post_success_message(branch_name, tag_name, slack_channel) {
-  def msg = """*New release branch*
+  def subject = "*New release-sensei branch*"
+  def body = """
 ```
 Branch:   ${branch_name}
 From tag: ${tag_name}
 ```
-
-${env.Job_URL} (number ${currentBuild.number})"""
-  send_slack_message(slack_channel, '#008000', msg)
+"""
+  senseislack.post_success([subject: subject, body: body, channel: slack_channel])
 }
 
 def post_failure_message(err, slack_channel) {
-   def msg = """*Launch branch creation failed*
-
- ${err}
-
- Error log: ${env.Job_URL}${currentBuild.number}/consoleFull"""
-  send_slack_message(slack_channel, '#ff0000', msg)
-}
-
-
-def send_slack_message(slack_channel, color_hex_code, formatted_message) {
-  def use_channel = '#' + slack_channel
-  slackSend channel: use_channel,
-    color: color_hex_code,
-    message: formatted_message,
-    teamDomain: 'senseilabs',
-    tokenCredentialId: 'senseilabs-slack-token'
+  def subject = "*release-sensei creation failed*"
+  senseislack.post_failure([subject: subject, channel: slack_channel])
 }
