@@ -1,6 +1,6 @@
-### GENERATED FILE ###
-# This file was generated with the script
-# scripts/create_stub_klick_genome_rakefile.rb
+# This file was INITIALLY generated with the script
+# scripts/create_stub_klick_genome_rakefile.rb,
+# and then subsequently edited by hand.
 
 namespace :rakefile do
   desc "Validate Rakefile dependencies and actions."
@@ -142,6 +142,15 @@ desc "Look for TODO and FIXME tags in the code"
 task :todo do puts "  called todo" end
 desc "Add RadEditor HTTP handlers to Web.config"
 task :fixconfigforradeditor do puts "  called fixconfigforradeditor" end
+
+desc "webconfig:build_for_tenant_environment"
+task "webconfig:build_for_tenant_environment" do puts "  called webconfig:build_for_tenant_environment" end
+desc "webconfig:delete_client_configs"
+task "webconfig:delete_client_configs" do puts "  called webconfig:delete_client_configs" end
+desc "webconfig:distribute"
+task "webconfig:distribute" do puts "  called webconfig:distribute" end
+desc "webconfig:fix_TO_BE_DEPRECATED"
+task "webconfig:fix_TO_BE_DEPRECATED" do puts "  called webconfig:fix_TO_BE_DEPRECATED" end
 
 # SIMULATING ERRORS
 require_relative 'simulate_failure/simulate_failure_for_current_branch.rb'
